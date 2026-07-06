@@ -1,8 +1,8 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-06T11:44:47.163002Z",
+  "updated_at": "2026-07-06T11:49:53.100060Z",
   "overall": "ok",
-  "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제4강 2026-07-07 06:00입니다.",
+  "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제4강 2026-07-07 05:00입니다.",
   "checks": {
     "ssh": {
       "status": "ok",
@@ -20,12 +20,12 @@
   "workflow": {
     "status": "ok",
     "mode": "idle",
-    "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제4강 2026-07-07 06:00입니다.",
+    "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제4강 2026-07-07 05:00입니다.",
     "current_step": "schedule",
     "target": {
       "lecture": 4,
       "title": "실패의 동역학과 초기 경력의 좌절이 미치는 영향",
-      "scheduled_at": "2026-07-07 06:00",
+      "scheduled_at": "2026-07-07 05:00",
       "overdue_minutes": 0,
       "running": false
     },
@@ -39,7 +39,7 @@
       {
         "id": "schedule",
         "label": "예약 확인",
-        "detail": "다음 예약 2026-07-07 06:00",
+        "detail": "다음 예약 2026-07-07 05:00",
         "status": "ready",
         "current": true
       },
@@ -102,7 +102,7 @@
     ],
     "log": {
       "path": "/Users/jehyunlee/pc_agent/dashun_wang/launchd.err",
-      "age_seconds": 53086,
+      "age_seconds": 53391,
       "tail": []
     }
   },
@@ -145,6 +145,10 @@
     },
     {
       "time": "2026-07-06T11:44:47.163002Z",
+      "message": "workflow=idle, current=schedule, target=L4"
+    },
+    {
+      "time": "2026-07-06T11:49:53.100060Z",
       "message": "workflow=idle, current=schedule, target=L4"
     }
   ],
@@ -219,6 +223,10 @@
     },
     {
       "time": "2026-07-06T11:44:47.163002Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-06T11:49:53.100060Z",
       "status": "pass"
     }
   ]

@@ -1,0 +1,13 @@
+{
+  "host": "jehyun-macmini2026",
+  "updated_at": null,
+  "overall": "unknown",
+  "summary": "Waiting for the first Mac mini heartbeat.",
+  "checks": {
+    "ssh": {"status": "unknown", "detail": "No heartbeat yet."},
+    "digest": {"status": "unknown", "detail": "No heartbeat yet."},
+    "watchdog": {"status": "unknown", "detail": "No heartbeat yet."}
+  },
+  "lecture": {"status": "unknown", "done": 0, "total": 11, "current": "Waiting for heartbeat."},
+  "events": [{"time": "init", "message": "Dashboard repository initialized."}]
+}

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Jehyun Lee Dashboards</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">JEHYUNLEE DASHBOARDS</p>
+      <h1>System Status</h1>
+    </div>
+    <div class="toolbar" aria-label="zoom controls">
+      <button id="zoomOut" type="button">−</button>
+      <span id="zoomLabel">100%</span>
+      <button id="zoomIn" type="button">＋</button>
+      <button id="zoomReset" type="button">Reset</button>
+    </div>
+  </header>
+
+  <main id="zoomSurface" class="zoom-surface">
+    <section class="hero status-unknown" id="hero">
+      <div>
+        <p class="eyebrow">Mac mini connectivity</p>
+        <h2 id="overallTitle">Checking…</h2>
+        <p id="overallDetail">Waiting for heartbeat data.</p>
+      </div>
+      <div class="pulse" id="pulse"><span></span></div>
+    </section>
+
+    <section class="grid">
+      <article class="card component" id="sshCard">
+        <div class="card-head"><h3>SSH / Tailscale</h3><span class="badge unknown">unknown</span></div>
+        <p id="sshDetail">No data yet.</p>
+      </article>
+      <article class="card component" id="digestCard">
+        <div class="card-head"><h3>Lecture Digest</h3><span class="badge unknown">unknown</span></div>
+        <p id="digestDetail">No data yet.</p>
+      </article>
+      <article class="card component" id="watchdogCard">
+        <div class="card-head"><h3>Watchdog</h3><span class="badge unknown">unknown</span></div>
+        <p id="watchdogDetail">No data yet.</p>
+      </article>
+      <article class="card component" id="heartbeatCard">
+        <div class="card-head"><h3>Heartbeat</h3><span class="badge unknown">unknown</span></div>
+        <p id="heartbeatDetail">No data yet.</p>
+      </article>
+    </section>
+
+    <section class="card wide">
+      <div class="card-head"><h3>Lecture Progress</h3><span id="lectureBadge" class="badge unknown">unknown</span></div>
+      <div id="lectureProgress" class="progress"><div></div></div>
+      <p id="lectureDetail">No data yet.</p>
+    </section>
+
+    <section class="card wide">
+      <div class="card-head"><h3>Recent Events</h3><span id="updatedAt">—</span></div>
+      <ol id="events" class="events"><li>Waiting for heartbeat.</li></ol>
+    </section>
+  </main>
+
+  <footer>
+    Static dashboard on GitHub Pages · data source: <code>data/macmini.json</code> · auto-refresh every 20s
+  </footer>
+  <script src="./app.js"></script>
+</body>
+</html>

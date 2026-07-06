@@ -1,4 +1,4 @@
-const DATA_URL = 'https://api.github.com/repos/jehyunlee/dashboards/contents/data/macmini.json?ref=main';
+const DATA_URL = 'https://api.github.com/repos/jehyunlee/dashboards/contents/data/macmini.json?ref=data';
 let zoom = Number(localStorage.getItem('dashZoom') || '1');
 const $ = (id) => document.getElementById(id);
 const surface = $('zoomSurface');

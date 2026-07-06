@@ -1,6 +1,6 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-06T10:33:55.233375Z",
+  "updated_at": "2026-07-06T10:35:35.032397Z",
   "overall": "warn",
   "summary": "Heartbeat pushed from Mac mini.",
   "checks": {
@@ -10,7 +10,7 @@
     },
     "digest": {
       "status": "warn",
-      "detail": "38149       00:00   0:00.08  18.3 Rs   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --lecture 3 (low CPU; watchdog monitors freeze)"
+      "detail": "38149       01:40   0:00.70   0.0 Ss   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --lecture 3"
     },
     "watchdog": {
       "status": "ok",
@@ -25,7 +25,7 @@
   },
   "processes": {
     "digest": [
-      "38149       00:00   0:00.08  18.3 Rs   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --lecture 3"
+      "38149       01:40   0:00.70   0.0 Ss   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --lecture 3"
     ],
     "watchdog": []
   },
@@ -60,6 +60,10 @@
     },
     {
       "time": "2026-07-06T10:33:55.233375Z",
+      "message": "heartbeat overall=warn, digest=running, done=2/11"
+    },
+    {
+      "time": "2026-07-06T10:35:35.032397Z",
       "message": "heartbeat overall=warn, digest=running, done=2/11"
     }
   ]

@@ -2,7 +2,7 @@ name: Deploy static dashboard
 
 on:
   push:
-    branches: [main, data]
+    branches: [main]
   workflow_dispatch:
 
 permissions:

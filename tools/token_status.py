@@ -14,6 +14,7 @@ import subprocess
 import time
 import urllib.error
 import urllib.request
+import urllib.parse
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
@@ -21,6 +22,8 @@ from typing import Any
 REPO = Path(os.environ.get("DASHBOARD_REPO", str(Path.home() / "pc_agent" / "dashboards-data"))).expanduser()
 BRANCH = os.environ.get("DASHBOARD_BRANCH", "data")
 DATA = REPO / "data" / "tokens.json"
+HISTORY = REPO / "data" / "tokens_history.json"
+HISTORY_MAX = int(os.environ.get("PC_TOKENS_HISTORY_MAX", "720"))
 KEYS_ENV = Path(os.environ.get("PC_KEYS_ENV", str(Path.home() / "pc_agent" / "keys.env"))).expanduser()
 LOCAL_KEYS = Path(os.environ.get("PC_LOCAL_KEYS", str(Path.home() / "Documents" / "paper-curation" / "docs" / "_local_keys.json"))).expanduser()
 DASHBOARD_KEYS = Path(os.environ.get("PC_DASHBOARD_KEYS", str(Path.home() / "pc_agent" / "dashboard_keys.json"))).expanduser()
@@ -389,6 +392,49 @@ def probe_openai(keys: dict[str, str]) -> dict[str, Any]:
     return p
 
 
+def anthropic_admin_usage_cost(admin_key: str, start_iso: str) -> dict[str, Any]:
+    headers = {"x-api-key": admin_key, "anthropic-version": "2023-06-01"}
+    cost_url = "https://api.anthropic.com/v1/organizations/cost_report?" + urllib.parse.urlencode({"starting_at": start_iso})
+    cost_resp = request_json(cost_url, headers=headers, timeout=45)
+    total_cost = 0.0
+    for bucket in (cost_resp.get("json", {}).get("data", []) or []) if cost_resp["ok"] else []:
+        for r in bucket.get("results", []) or []:
+            v = number_value(r.get("amount"))
+            if v is not None:
+                total_cost += v
+    usage_url = "https://api.anthropic.com/v1/organizations/usage_report/messages?" + urllib.parse.urlencode({"starting_at": start_iso, "bucket_width": "1d"})
+    usage_resp = request_json(usage_url, headers=headers, timeout=45)
+    input_tokens = output_tokens = cache_read = cache_creation = 0
+    for bucket in (usage_resp.get("json", {}).get("data", []) or []) if usage_resp["ok"] else []:
+        for r in bucket.get("results", []) or []:
+            input_tokens += int(r.get("uncached_input_tokens") or 0)
+            output_tokens += int(r.get("output_tokens") or 0)
+            cache_read += int(r.get("cache_read_input_tokens") or 0)
+            cc = r.get("cache_creation") or {}
+            if isinstance(cc, dict):
+                cache_creation += int(cc.get("ephemeral_1h_input_tokens") or 0) + int(cc.get("ephemeral_5m_input_tokens") or 0)
+    total_tokens = input_tokens + output_tokens + cache_read + cache_creation
+    if not cost_resp["ok"] and not usage_resp["ok"]:
+        detail = cost_resp.get("error") or usage_resp.get("error") or "Anthropic admin report unavailable."
+        return {"available": False, "detail": detail}
+    return {
+        "available": True,
+        "source": "Anthropic organization cost/usage report",
+        "window": "last_30d",
+        "month_to_date_cost": round(total_cost, 4),
+        "currency": "usd",
+        "cost_available": cost_resp["ok"],
+        "usage": {
+            "available": usage_resp["ok"],
+            "total_tokens": total_tokens,
+            "input_tokens": input_tokens,
+            "output_tokens": output_tokens,
+            "cache_read_tokens": cache_read,
+            "cache_creation_tokens": cache_creation,
+        },
+    }
+
+
 def probe_anthropic(keys: dict[str, str]) -> dict[str, Any]:
     p = make_provider("anthropic", "Anthropic")
     key = keys.get("ANTHROPIC_API_KEY") or keys.get("anthropic_key")
@@ -409,7 +455,16 @@ def probe_anthropic(keys: dict[str, str]) -> dict[str, Any]:
         p["status"] = auth_status(resp["status_code"])
         detail = "Invalid Anthropic API key configured on Mac mini." if resp["status_code"] in {401, 403} else (resp.get("error") or f"HTTP {resp['status_code']}")
         p["connection"] = {"ok": False, "detail": detail}
-    p["billing"] = {"available": False, "detail": "Monthly usage/cost not shown: Anthropic Admin API key is not configured; Messages API connectivity and rate-limit headers above are valid."}
+    admin_key = keys.get("ANTHROPIC_ADMIN_API_KEY") or keys.get("ANTHROPIC_ADMIN_KEY")
+    if admin_key:
+        start_iso = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%dT00:00:00Z")
+        report = anthropic_admin_usage_cost(admin_key, start_iso)
+        if report.get("available"):
+            p["billing"] = report
+        else:
+            p["billing"] = {"available": False, "detail": f"Anthropic admin usage/cost unavailable: {report.get('detail')}"}
+    else:
+        p["billing"] = {"available": False, "detail": "Monthly usage/cost not shown: Anthropic Admin API key is not configured; Messages API connectivity and rate-limit headers above are valid."}
     if not p["token_window"].get("available"):
         p["notes"].append("Token remaining/reset headers were not available because the model request did not succeed or the provider omitted them.")
     return p
@@ -469,6 +524,33 @@ def load_prev_events() -> list[dict[str, str]]:
         return []
 
 
+def build_history_entry(providers: list[dict[str, Any]], t: str) -> dict[str, Any]:
+    entry: dict[str, Any] = {"t": t}
+    for p in providers:
+        tw = (p.get("token_window") or {}).get("tokens") or {}
+        api_limit = number_value(tw.get("limit"))
+        api_remaining = number_value(tw.get("remaining"))
+        api_used = None
+        if api_limit is not None and api_remaining is not None:
+            api_used = max(0, int(round(api_limit - api_remaining)))
+        usage = (p.get("billing") or {}).get("usage") or {}
+        account_tokens = usage.get("total_tokens") if usage.get("available") else None
+        entry[p["id"]] = {
+            "connected": 1 if (p.get("connection") or {}).get("ok") else 0,
+            "account_tokens": account_tokens,
+            "api_used": api_used,
+            "api_limit": int(api_limit) if api_limit is not None else None,
+        }
+    return entry
+
+
+def load_history() -> list[dict[str, Any]]:
+    try:
+        return json.loads(HISTORY.read_text(encoding="utf-8")).get("samples", [])
+    except Exception:
+        return []
+
+
 def main() -> None:
     keys = load_keys()
     updated = now_iso()
@@ -490,10 +572,15 @@ def main() -> None:
     run(["git", "config", "user.name", "Mac mini Token Status"], 10)
     run(["git", "config", "user.email", "tokens@jehyunlee.dev"], 10)
     run(["git", "pull", "--rebase", "origin", BRANCH], 60)
+    samples = load_history()
+    samples.append(build_history_entry(providers, updated))
+    samples = samples[-HISTORY_MAX:]
+    history = {"updated_at": updated, "interval_seconds": 300, "max_samples": HISTORY_MAX, "samples": samples}
     DATA.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    cp = run(["git", "status", "--short", "data/tokens.json"], 20)
+    HISTORY.write_text(json.dumps(history, ensure_ascii=False) + "\n", encoding="utf-8")
+    run(["git", "add", "data/tokens.json", "data/tokens_history.json"], 20)
+    cp = run(["git", "status", "--short", "data/tokens.json", "data/tokens_history.json"], 20)
     if cp.stdout.strip():
-        run(["git", "add", "data/tokens.json"], 20)
         commit = run(["git", "commit", "-q", "-m", f"tokens: provider status {updated}"], 30)
         if commit.returncode != 0:
             print("commit failed:", sanitize(commit.stdout))

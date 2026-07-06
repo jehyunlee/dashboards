@@ -1,122 +1,139 @@
-const SAME_ORIGIN_DATA_URL = '../data/tokens.json';
-const RAW_DATA_URL = 'https://raw.githubusercontent.com/jehyunlee/dashboards/data/data/tokens.json';
+const SNAP_SAME = '../data/tokens.json';
+const SNAP_RAW = 'https://raw.githubusercontent.com/jehyunlee/dashboards/data/data/tokens.json';
+const HIST_SAME = '../data/tokens_history.json';
+const HIST_RAW = 'https://raw.githubusercontent.com/jehyunlee/dashboards/data/data/tokens_history.json';
+const VISIBLE = 60; // 60 ticks x 5 min = last 5 hours
 const $ = (id) => document.getElementById(id);
 
 function ageMs(iso){ const t = Date.parse(iso || ''); return Number.isFinite(t) ? Date.now() - t : Infinity; }
 function fmtAge(ms){ if(!Number.isFinite(ms)) return 'unknown'; const s=Math.max(0,Math.round(ms/1000)); if(s<90) return `${s}s ago`; const m=Math.round(s/60); if(m<90) return `${m}m ago`; const h=Math.round(m/60); return `${h}h ago`; }
-function cls(status){ return status === 'ok' ? 'ok' : ['missing','rate_limited','unknown'].includes(status) ? 'warn' : status === 'warn' ? 'warn' : 'bad'; }
+function cls(status){ return status === 'ok' ? 'ok' : ['missing','rate_limited','unknown'].includes(status) ? 'warn' : 'bad'; }
 function escapeHtml(s){ return String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
-function decodeData(payload){ return payload; }
-function plain(v){
-  if(v === null || v === undefined || v === '') return '—';
-  if(Array.isArray(v)) return v.map(plain).join('; ');
-  if(typeof v === 'object') return Object.entries(v).map(([k,val]) => `${k}=${plain(val)}`).join(', ');
-  return String(v);
+function statusText(status){ return ({ok:'connected', missing:'missing', auth_error:'auth error', rate_limited:'rate limited', provider_error:'provider error', error:'error', unknown:'unknown'})[status] || status || 'unknown'; }
+
+function fmtCompact(n){
+  const x = Number(n);
+  if(!Number.isFinite(x)) return '—';
+  if(x >= 1e9) return (x/1e9).toFixed(x>=1e10?0:1)+'B';
+  if(x >= 1e6) return (x/1e6).toFixed(x>=1e7?0:1)+'M';
+  if(x >= 1e3) return (x/1e3).toFixed(x>=1e4?0:1)+'K';
+  return String(Math.round(x));
 }
-async function fetchOne(url, decode){
-  const r = await fetch(url, {cache:'no-store'});
+function fmtFull(n){ const x=Number(n); return Number.isFinite(x) ? x.toLocaleString('en-US') : '—'; }
+
+async function fetchOne(url){
+  const r = await fetch(`${url}?t=${Date.now()}`, {cache:'no-store'});
   if(!r.ok) throw new Error(`HTTP ${r.status}`);
-  return decode ? decodeData(await r.json()) : r.json();
+  return r.json();
 }
-async function fetchData(){
-  const sameOrigin = fetchOne(`${SAME_ORIGIN_DATA_URL}?t=${Date.now()}`, false);
-  const raw = fetchOne(`${RAW_DATA_URL}?t=${Date.now()}`, false);
-  const results = await Promise.allSettled([sameOrigin, raw]);
-  const data = results.filter(r => r.status === 'fulfilled').map(r => r.value).filter(Boolean);
-  if(!data.length) throw new Error(results.map(r => r.reason?.message || String(r.reason)).join('; '));
-  data.sort((a, b) => Date.parse(b.updated_at || 0) - Date.parse(a.updated_at || 0));
-  return data[0];
+async function newestOf(urls, keyer){
+  const results = await Promise.allSettled(urls.map(fetchOne));
+  const ok = results.filter(r => r.status === 'fulfilled').map(r => r.value).filter(Boolean);
+  if(!ok.length) throw new Error(results.map(r => r.reason?.message || String(r.reason)).join('; '));
+  ok.sort((a,b) => keyer(b) - keyer(a));
+  return ok[0];
 }
-function statusText(status){
-  return ({ok:'connected', missing:'missing', auth_error:'auth error', rate_limited:'rate limited', provider_error:'provider error', error:'error', unknown:'unknown'})[status] || status || 'unknown';
+const fetchSnapshot = () => newestOf([SNAP_SAME, SNAP_RAW], d => Date.parse(d.updated_at || 0) || 0);
+const fetchHistory = async () => {
+  try { return await newestOf([HIST_SAME, HIST_RAW], d => (d.samples || []).length); }
+  catch { return {samples: []}; }
+};
+
+function lastN(arr, n){ return arr.slice(Math.max(0, arr.length - n)); }
+
+function connectionTicks(samples, pid){
+  const vis = lastN(samples, VISIBLE);
+  if(!vis.length) return {html:'<p class="nodata">아직 표본 없음 (5분마다 수집)</p>', sub:'—'};
+  const ticks = vis.map(s => {
+    const on = (s[pid] || {}).connected === 1;
+    const label = `${s.t || ''} · ${on ? 'connected' : 'down'}`;
+    return `<span class="tick ${on ? 'up' : 'down'}" title="${escapeHtml(label)}"></span>`;
+  }).join('');
+  const up = vis.filter(s => (s[pid] || {}).connected === 1).length;
+  return {html:`<div class="tickrow">${ticks}</div>`, sub:`${up}/${vis.length} up · ${VISIBLE*5/60}h`};
 }
-function value(v){ return v === null || v === undefined || v === '' ? '—' : escapeHtml(v); }
-function metric(label, val){ return `<div class="metric"><span>${escapeHtml(label)}</span><b>${value(val)}</b></div>`; }
-function windowSource(tw){
-  return tw.available ? `Rate-limit window source: ${tw.source || 'provider headers'}. This is a live refill bucket, not monthly usage.` : `Rate-limit window unavailable: ${tw.source || 'provider did not expose headers'}.`;
-}
-function fmtNumber(n){
-  const x = Number(n);
-  return Number.isFinite(x) ? x.toLocaleString('en-US') : '—';
-}
-function fmtUsd(n){
-  const x = Number(n);
-  return Number.isFinite(x) ? `$${x.toLocaleString('en-US', {maximumFractionDigits: 2})}` : '—';
-}
-function quotaText(billing){
-  const usage = billing.usage || {};
-  const parts = [];
-  const windowLabel = billing.window === 'last_30d' ? 'Last 30 days' : 'Month-to-date';
-  if(usage.available){
-    parts.push(`${windowLabel} API usage: ${fmtNumber(usage.total_tokens)} tokens, ${fmtNumber(usage.total_requests)} requests`);
-    parts.push(`completions in/out ${fmtNumber(usage.completion_input_tokens)}/${fmtNumber(usage.completion_output_tokens)}, embeddings ${fmtNumber(usage.embedding_input_tokens)} tokens`);
+
+function usageBars(samples, pid, field, mode){
+  let values;
+  if(mode === 'delta'){
+    const full = samples.map(s => (s[pid] || {})[field]);
+    const deltas = full.map((v, i) => {
+      if(i === 0) return null;
+      const a = Number(full[i-1]), b = Number(v);
+      if(!Number.isFinite(a) || !Number.isFinite(b)) return null;
+      return Math.max(0, b - a);
+    });
+    values = lastN(deltas, VISIBLE);
+  } else {
+    values = lastN(samples, VISIBLE).map(s => {
+      const v = (s[pid] || {})[field];
+      return (v === null || v === undefined) ? null : Number(v);
+    });
   }
-  if(billing.available && billing.month_to_date_cost !== undefined){
-    parts.push(`${windowLabel} cost endpoint: ${billing.month_to_date_cost} ${billing.currency || ''}`.trim());
-  }
-  const alerts = billing.spend_alerts || {};
-  if(alerts.available && Array.isArray(alerts.alerts) && alerts.alerts.length){
-    const labels = alerts.alerts
-      .map(a => `${fmtUsd(a.threshold_usd)}/${a.interval || 'interval'}`)
-      .join(', ');
-    parts.push(`Account spend alerts: ${labels} — alerts, not a hard token quota`);
-  }
-  const accountQuota = billing.account_token_quota || {};
-  if(accountQuota.detail) parts.push(accountQuota.detail);
-  if(billing.detail) parts.push(billing.detail);
-  return parts.length ? parts.join('. ') : 'No bounded monthly usage/quota API is configured for this provider.';
+  const visSamples = lastN(samples, VISIBLE);
+  const nums = values.filter(v => Number.isFinite(v));
+  if(!nums.length) return null;
+  const max = Math.max(1, ...nums);
+  const total = nums.reduce((a, b) => a + b, 0);
+  const bars = values.map((v, i) => {
+    if(!Number.isFinite(v)) return '<span class="bar na" title="no sample"></span>';
+    const h = v <= 0 ? 0 : Math.max(3, Math.round(v / max * 100));
+    const when = visSamples[i]?.t || '';
+    return `<span class="bar" style="height:${h}%" title="${escapeHtml(when)}: ${fmtFull(v)} tokens"></span>`;
+  }).join('');
+  return {max, total, html:`
+    <div class="chart">
+      <div class="yaxis"><span>${fmtCompact(max)}</span><span>${fmtCompact(max/2)}</span><span>0</span></div>
+      <div class="plot">${bars}</div>
+    </div>`};
 }
-function renderProvider(p){
-  const tw = p.token_window || {};
-  const tokens = tw.tokens || {};
-  const requests = tw.requests || {};
-  const conn = p.connection || {};
-  const probe = p.model_probe || {};
+
+function renderProvider(p, samples){
+  const conn = connectionTicks(samples, p.id);
+  const acct = usageBars(samples, p.id, 'account_tokens', 'delta');
+  const api = usageBars(samples, p.id, 'api_used', 'level');
   const billing = p.billing || {};
-  const notes = [...(p.notes || [])];
-  if(!tw.available) notes.unshift(windowSource(tw));
-  else notes.unshift(windowSource(tw));
-  const quota = quotaText(billing);
-  const usage = probe.usage || {};
-  const usageText = Object.keys(usage).length ? Object.entries(usage).map(([k,v]) => `${k}: ${plain(v)}`).join(', ') : '—';
+  const u = billing.usage || {};
+  const acctMeta = u.available
+    ? `30일 누적 ${fmtCompact(u.total_tokens)} · ${billing.month_to_date_cost !== undefined ? '$'+billing.month_to_date_cost : 'cost n/a'}`
+    : '계정 usage API 미연결';
+  const acctChart = acct
+    ? acct.html
+    : `<p class="nodata">${u.available ? '아직 변화 없음' : '계정 usage admin API 미연결'}</p>`;
+  const apiChart = api
+    ? api.html
+    : '<p class="nodata">rate-limit 헤더 없음</p>';
   return `<article class="card provider provider-${escapeHtml(p.id)}">
     <div class="card-head"><h3>${escapeHtml(p.label || p.id)}</h3><span class="badge ${cls(p.status)}">${escapeHtml(statusText(p.status))}</span></div>
-    <p>${escapeHtml(conn.detail || 'No connection detail.')}</p>
-    <div class="metric-grid">
-      ${metric('rate limit', tokens.limit)}
-      ${metric('left now', tokens.remaining)}
-      ${metric('refills/resets', tokens.reset)}
+    <div class="series">
+      <div class="series-head"><span>API 접속상태</span><em>${escapeHtml(conn.sub)}</em></div>
+      ${conn.html}
     </div>
-    <div class="section">
-      <dl class="kv">
-        <dt>Model probe</dt><dd>${escapeHtml(probe.model || '—')}</dd>
-        <dt>Status code</dt><dd>${value(probe.status_code)}</dd>
-        <dt>Latency</dt><dd>${probe.latency_ms === undefined ? '—' : `${escapeHtml(probe.latency_ms)} ms`}</dd>
-        <dt>Request limit</dt><dd>${value(requests.limit)}</dd>
-        <dt>Requests left</dt><dd>${value(requests.remaining)}</dd>
-        <dt>Request reset</dt><dd>${value(requests.reset)}</dd>
-        <dt>Probe usage</dt><dd>${escapeHtml(usageText)}</dd>
-      </dl>
+    <div class="series">
+      <div class="series-head"><span>계정 내 토큰 사용량 · 5분</span><em>${escapeHtml(acctMeta)}</em></div>
+      ${acctChart}
     </div>
-    <div class="section quota">
-      <h4>Bounded usage / quota</h4>
-      <p>${escapeHtml(quota)}</p>
+    <div class="series">
+      <div class="series-head"><span>API 토큰 사용량 (rate window) · 5분</span><em>${api ? 'peak '+fmtCompact(api.max) : '—'}</em></div>
+      ${apiChart}
     </div>
-    ${notes.length ? `<div class="note">${notes.map(escapeHtml).join('<br>')}</div>` : ''}
   </article>`;
 }
+
 function eventLine(e){ return `${e.time || ''} — ${e.message || JSON.stringify(e)}`; }
+
 async function refresh(){
   try{
-    const d = await fetchData();
+    const [d, hist] = await Promise.all([fetchSnapshot(), fetchHistory()]);
+    const samples = hist.samples || [];
     const age = ageMs(d.updated_at);
     const stale = age > 30 * 60 * 1000;
     const overall = stale ? 'warn' : (d.overall || 'unknown');
     $('hero').className = `hero status-${cls(overall)}`;
     $('overallTitle').textContent = overall === 'ok' ? 'All configured APIs connected' : overall === 'warn' ? 'Partial API status' : 'Provider check failing';
-    $('overallDetail').textContent = `${d.summary || ''} · last update ${fmtAge(age)}${stale ? ' · stale' : ''}`;
+    $('overallDetail').textContent = `${d.summary || ''} · ${samples.length} samples · last update ${fmtAge(age)}${stale ? ' · stale' : ''}`;
     $('updatedAt').textContent = d.updated_at ? `updated ${new Date(d.updated_at).toLocaleString()}` : '—';
-    $('providers').innerHTML = (d.providers || []).map(renderProvider).join('') || '<article class="card"><p>No providers found.</p></article>';
+    $('providers').innerHTML = (d.providers || []).map(p => renderProvider(p, samples)).join('') || '<article class="card"><p>No providers found.</p></article>';
     const events = (d.events || []).slice(-12).reverse();
     $('events').innerHTML = events.length ? events.map(e => `<li>${escapeHtml(eventLine(e))}</li>`).join('') : '<li>No recent events.</li>';
   }catch(err){

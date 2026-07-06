@@ -1,6 +1,6 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-06T10:45:45.799593Z",
+  "updated_at": "2026-07-06T10:50:00.474342Z",
   "overall": "warn",
   "summary": "Heartbeat pushed from Mac mini.",
   "checks": {
@@ -10,7 +10,7 @@
     },
     "digest": {
       "status": "warn",
-      "detail": "38926       02:53   0:00.76   0.0 Ss   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --lecture 3"
+      "detail": "38926       07:08   0:02.09   0.0 Ss   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --lecture 3"
     },
     "watchdog": {
       "status": "ok",
@@ -25,8 +25,7 @@
   },
   "processes": {
     "digest": [
-      "38926       02:53   0:00.76   0.0 Ss   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --lecture 3",
-      "38957       02:24   0:00.01   0.0 Ss   zsh -c \\012  for i in $(seq 1 6); do\\012    sleep 45\\012    echo \"=== check $i ===\"\\012    tail -14 ~/pc_agent/dashun_wang/l3_tts_timeout_restart.log 2>/dev/null\\012    if ! pgrep -f agent_lecture_digest.py >/dev/null; then echo DONE; break; fi\\012  done\\012  echo \"=== ledger ===\"; /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python - <<\"PY\"\\012import json\\012L=json.load(open(\"/Users/jehyunlee/pc_agent/dashun_wang/curriculum.json\"))[\"lectures\"][2]\\012print(L.get(\"status\"), L.get(\"completed_at\"), L.get(\"artifacts\"))\\012PY\\012"
+      "38926       07:08   0:02.09   0.0 Ss   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --lecture 3"
     ],
     "watchdog": []
   },
@@ -74,6 +73,16 @@
     {
       "time": "2026-07-06T10:45:45.799593Z",
       "message": "heartbeat overall=warn, digest=running, done=2/11"
+    },
+    {
+      "time": "2026-07-06T10:50:00.474342Z",
+      "message": "heartbeat overall=warn, digest=running, done=2/11"
+    }
+  ],
+  "ssh_history": [
+    {
+      "time": "2026-07-06T10:50:00.474342Z",
+      "status": "pass"
     }
   ]
 }

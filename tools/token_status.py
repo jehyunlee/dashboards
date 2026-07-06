@@ -214,6 +214,7 @@ def probe_openai(keys: dict[str, str]) -> dict[str, Any]:
         p["connection"] = {"ok": False, "detail": "OPENAI_API_KEY/openai_key not found on Mac mini."}
         return p
     headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+    admin_key = keys.get("OPENAI_ADMIN_API_KEY") or keys.get("OPENAI_ADMIN_KEY")
     body = {"model": "gpt-4o-mini", "messages": [{"role": "user", "content": "ping"}], "max_tokens": 1}
     resp = request_json("https://api.openai.com/v1/chat/completions", method="POST", headers=headers, body=body)
     p["model_probe"] = {"model": "gpt-4o-mini", "status_code": resp["status_code"], "latency_ms": resp["latency_ms"]}
@@ -227,8 +228,13 @@ def probe_openai(keys: dict[str, str]) -> dict[str, Any]:
         p["connection"] = {"ok": False, "detail": detail}
 
     start = int(datetime(datetime.now(timezone.utc).year, datetime.now(timezone.utc).month, 1, tzinfo=timezone.utc).timestamp())
-    costs = request_json(f"https://api.openai.com/v1/organization/costs?start_time={start}&bucket_width=1d&limit=31", headers={"Authorization": f"Bearer {key}"})
+    billing_key = admin_key or key
+    costs = request_json(f"https://api.openai.com/v1/organization/costs?start_time={start}&bucket_width=1d&limit=31", headers={"Authorization": f"Bearer {billing_key}"})
     p["billing"] = extract_openai_costs(costs)
+    if p["billing"].get("available"):
+        p["billing"]["source"] = "OpenAI organization costs endpoint"
+    elif not admin_key:
+        p["billing"]["detail"] = "Organization cost not shown: OPENAI_ADMIN_API_KEY/OPENAI_ADMIN_KEY is not configured; rate-limit data above is from the normal API key."
     if not p["token_window"].get("available"):
         p["notes"].append("Token remaining/reset was not exposed in this response. A valid key or a billable model response is usually required.")
     return p

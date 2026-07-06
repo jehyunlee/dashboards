@@ -1,4 +1,5 @@
 const DATA_URL = 'https://api.github.com/repos/jehyunlee/dashboards/contents/data/macmini.json?ref=data';
+const RAW_DATA_URL = 'https://raw.githubusercontent.com/jehyunlee/dashboards/data/data/macmini.json';
 let zoom = Number(localStorage.getItem('dashZoom') || '1');
 const $ = (id) => document.getElementById(id);
 const surface = $('zoomSurface');
@@ -54,6 +55,18 @@ function decodeData(payload){
   const bin = atob(String(payload.content).replace(/\n/g, ''));
   const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
   return JSON.parse(new TextDecoder('utf-8').decode(bytes));
+}
+
+async function fetchData(){
+  try{
+    const r = await fetch(`${DATA_URL}&t=${Date.now()}`, {cache:'no-store'});
+    if(!r.ok) throw new Error(`GitHub API HTTP ${r.status}`);
+    return decodeData(await r.json());
+  }catch(apiErr){
+    const r = await fetch(`${RAW_DATA_URL}?t=${Math.floor(Date.now() / 60000)}`, {cache:'no-store'});
+    if(!r.ok) throw new Error(`${apiErr.message}; raw HTTP ${r.status}`);
+    return r.json();
+  }
 }
 
 const TASK_LABEL = {
@@ -141,9 +154,7 @@ function renderWorkflow(w){
 
 async function refresh(){
   try{
-    const r = await fetch(`${DATA_URL}&t=${Date.now()}`, {cache:'no-store'});
-    if(!r.ok) throw new Error(`HTTP ${r.status}`);
-    const d = decodeData(await r.json());
+    const d = await fetchData();
     window.__updatedAt = d.updated_at;
     const age = ageMs(d.updated_at);
     const stale = age > 10 * 60 * 1000;

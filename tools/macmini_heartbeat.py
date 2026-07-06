@@ -94,16 +94,21 @@ def main():
       "events": (events + [{"time": now, "message": f"heartbeat overall={overall}, digest={'running' if digest else 'idle'}, done={lecture['done']}/{lecture['total']}"}])[-20:],
     }
     DATA.parent.mkdir(parents=True, exist_ok=True)
-    DATA.write_text(json.dumps(data, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
-    cp=run(["git","status","--short","data/macmini.json"], 20)
     run(["git", "config", "user.name", "Mac mini Heartbeat"], 10)
     run(["git", "config", "user.email", "heartbeat@jehyunlee.dev"], 10)
+    run(["git", "pull", "--rebase", "origin", "main"], 60)
+    DATA.write_text(json.dumps(data, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
+    cp=run(["git","status","--short","data/macmini.json"], 20)
     if cp.stdout.strip():
         run(["git","add","data/macmini.json"], 20)
         commit=run(["git","commit","-q","-m",f"heartbeat: macmini {now}"], 30)
         if commit.returncode != 0:
             print("commit failed:", commit.stdout.strip())
         push=run(["git","push","origin","main"], 60)
+        if push.returncode != 0:
+            print("push failed; pulling/retrying:", push.stdout.strip())
+            run(["git", "pull", "--rebase", "origin", "main"], 60)
+            push=run(["git","push","origin","main"], 60)
         print(push.stdout.strip())
     print(json.dumps({"updated_at":now,"overall":overall,"digest_running":bool(digest),"done":lecture["done"],"total":lecture["total"]}, ensure_ascii=False))
 

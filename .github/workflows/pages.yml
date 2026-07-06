@@ -2,7 +2,7 @@ name: Deploy static dashboard
 
 on:
   push:
-    branches: [main]
+    branches: [main, data]
   workflow_dispatch:
 
 permissions:
@@ -22,13 +22,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main
+          path: site-src
+      - uses: actions/checkout@v4
+        with:
+          ref: data
+          path: data-src
       - name: Prepare static artifact
         run: |
           mkdir -p _site/data _site/learn _site/tokens
-          cp index.html _site/
-          cp learn/index.html learn/app.js learn/style.css _site/learn/
-          cp tokens/index.html tokens/app.js tokens/style.css _site/tokens/
-          cp data/macmini.json data/tokens.json _site/data/
+          cp site-src/index.html _site/
+          cp site-src/learn/index.html site-src/learn/app.js site-src/learn/style.css _site/learn/
+          cp site-src/tokens/index.html site-src/tokens/app.js site-src/tokens/style.css _site/tokens/
+          cp data-src/data/macmini.json data-src/data/tokens.json _site/data/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

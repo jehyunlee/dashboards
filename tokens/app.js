@@ -1,4 +1,4 @@
-const DATA_URL = 'https://api.github.com/repos/jehyunlee/dashboards/contents/data/tokens.json?ref=data';
+const SAME_ORIGIN_DATA_URL = '../data/tokens.json';
 const RAW_DATA_URL = 'https://raw.githubusercontent.com/jehyunlee/dashboards/data/data/tokens.json';
 const $ = (id) => document.getElementById(id);
 
@@ -6,7 +6,7 @@ function ageMs(iso){ const t = Date.parse(iso || ''); return Number.isFinite(t) 
 function fmtAge(ms){ if(!Number.isFinite(ms)) return 'unknown'; const s=Math.max(0,Math.round(ms/1000)); if(s<90) return `${s}s ago`; const m=Math.round(s/60); if(m<90) return `${m}m ago`; const h=Math.round(m/60); return `${h}h ago`; }
 function cls(status){ return status === 'ok' ? 'ok' : ['missing','rate_limited','unknown'].includes(status) ? 'warn' : status === 'warn' ? 'warn' : 'bad'; }
 function escapeHtml(s){ return String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
-function decodeData(payload){ if(!payload || !payload.content) return payload; const bin=atob(String(payload.content).replace(/\n/g,'')); const bytes=Uint8Array.from(bin, c=>c.charCodeAt(0)); return JSON.parse(new TextDecoder('utf-8').decode(bytes)); }
+function decodeData(payload){ return payload; }
 function plain(v){
   if(v === null || v === undefined || v === '') return '—';
   if(Array.isArray(v)) return v.map(plain).join('; ');
@@ -19,9 +19,9 @@ async function fetchOne(url, decode){
   return decode ? decodeData(await r.json()) : r.json();
 }
 async function fetchData(){
-  const api = fetchOne(`${DATA_URL}&t=${Date.now()}`, true);
+  const sameOrigin = fetchOne(`${SAME_ORIGIN_DATA_URL}?t=${Date.now()}`, false);
   const raw = fetchOne(`${RAW_DATA_URL}?t=${Date.now()}`, false);
-  const results = await Promise.allSettled([api, raw]);
+  const results = await Promise.allSettled([sameOrigin, raw]);
   const data = results.filter(r => r.status === 'fulfilled').map(r => r.value).filter(Boolean);
   if(!data.length) throw new Error(results.map(r => r.reason?.message || String(r.reason)).join('; '));
   data.sort((a, b) => Date.parse(b.updated_at || 0) - Date.parse(a.updated_at || 0));

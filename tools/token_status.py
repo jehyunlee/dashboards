@@ -242,7 +242,7 @@ def probe_anthropic(keys: dict[str, str]) -> dict[str, Any]:
         p["connection"] = {"ok": False, "detail": "ANTHROPIC_API_KEY/anthropic_key not found on Mac mini."}
         return p
     headers = {"x-api-key": key, "anthropic-version": "2023-06-01", "Content-Type": "application/json"}
-    model = os.environ.get("ANTHROPIC_STATUS_MODEL", "claude-3-5-haiku-20241022")
+    model = os.environ.get("ANTHROPIC_STATUS_MODEL", "claude-haiku-4-5-20251001")
     body = {"model": model, "max_tokens": 1, "messages": [{"role": "user", "content": "ping"}]}
     resp = request_json("https://api.anthropic.com/v1/messages", method="POST", headers=headers, body=body)
     p["model_probe"] = {"model": model, "status_code": resp["status_code"], "latency_ms": resp["latency_ms"]}

@@ -72,7 +72,8 @@ def load_json(path, default):
 
 
 def load_prev_events():
-    return load_json(DATA, {}).get("events", [])[-20:]
+    events = load_json(DATA, {}).get("events", [])[-20:]
+    return [e for e in events if "workflow=" in str(e.get("message", ""))][-10:]
 
 
 def parse_local_dt(value):
@@ -329,8 +330,6 @@ def build_workflow(ledger, digest_lines, ssh_ok):
             "completed_at": last_done.get("completed_at") or last_done.get("scheduled_at") if last_done else None,
         },
         "course": ledger.get("course", "Dashun Wang 연구 흐름 따라잡기") if ledger else "Dashun Wang 연구 흐름 따라잡기",
-        "done": sum(1 for item in lectures if item.get("status") == "done"),
-        "total": total,
         "steps": steps,
         "log": {
             "path": str(log_path) if log_path else None,

@@ -8,6 +8,7 @@ from pathlib import Path
 AGENT = Path(os.environ.get("PC_AGENT_DIR", str(Path.home()/"pc_agent"/"dashun_wang"))).expanduser()
 REPO = Path(os.environ.get("DASHBOARD_REPO", str(Path.home()/"pc_agent"/"dashboards"))).expanduser()
 DATA = REPO / "data" / "macmini.json"
+BRANCH = os.environ.get("DASHBOARD_BRANCH", "data")
 LEDGER = AGENT / "curriculum.json"
 
 
@@ -96,7 +97,7 @@ def main():
     DATA.parent.mkdir(parents=True, exist_ok=True)
     run(["git", "config", "user.name", "Mac mini Heartbeat"], 10)
     run(["git", "config", "user.email", "heartbeat@jehyunlee.dev"], 10)
-    run(["git", "pull", "--rebase", "origin", "main"], 60)
+    run(["git", "pull", "--rebase", "origin", BRANCH], 60)
     try:
         prev = json.loads(DATA.read_text(encoding="utf-8")) if DATA.exists() else {}
     except Exception:
@@ -111,11 +112,11 @@ def main():
         commit=run(["git","commit","-q","-m",f"heartbeat: macmini {now}"], 30)
         if commit.returncode != 0:
             print("commit failed:", commit.stdout.strip())
-        push=run(["git","push","origin","main"], 60)
+        push=run(["git","push","origin",BRANCH], 60)
         if push.returncode != 0:
             print("push failed; pulling/retrying:", push.stdout.strip())
-            run(["git", "pull", "--rebase", "origin", "main"], 60)
-            push=run(["git","push","origin","main"], 60)
+            run(["git", "pull", "--rebase", "origin", BRANCH], 60)
+            push=run(["git","push","origin",BRANCH], 60)
         print(push.stdout.strip())
     print(json.dumps({"updated_at":now,"overall":overall,"digest_running":bool(digest),"done":lecture["done"],"total":lecture["total"]}, ensure_ascii=False))
 

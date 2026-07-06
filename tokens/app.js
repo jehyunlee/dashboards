@@ -13,17 +13,19 @@ function plain(v){
   if(typeof v === 'object') return Object.entries(v).map(([k,val]) => `${k}=${plain(val)}`).join(', ');
   return String(v);
 }
+async function fetchOne(url, decode){
+  const r = await fetch(url, {cache:'no-store'});
+  if(!r.ok) throw new Error(`HTTP ${r.status}`);
+  return decode ? decodeData(await r.json()) : r.json();
+}
 async function fetchData(){
-  const rawUrl = `${RAW_DATA_URL}?t=${Date.now()}`;
-  try{
-    const r = await fetch(rawUrl, {cache:'no-store'});
-    if(!r.ok) throw new Error(`raw HTTP ${r.status}`);
-    return r.json();
-  }catch(rawErr){
-    const r = await fetch(`${DATA_URL}&t=${Date.now()}`, {cache:'no-store'});
-    if(!r.ok) throw new Error(`${rawErr.message}; GitHub API HTTP ${r.status}`);
-    return decodeData(await r.json());
-  }
+  const api = fetchOne(`${DATA_URL}&t=${Date.now()}`, true);
+  const raw = fetchOne(`${RAW_DATA_URL}?t=${Date.now()}`, false);
+  const results = await Promise.allSettled([api, raw]);
+  const data = results.filter(r => r.status === 'fulfilled').map(r => r.value).filter(Boolean);
+  if(!data.length) throw new Error(results.map(r => r.reason?.message || String(r.reason)).join('; '));
+  data.sort((a, b) => Date.parse(b.updated_at || 0) - Date.parse(a.updated_at || 0));
+  return data[0];
 }
 function statusText(status){
   return ({ok:'connected', missing:'missing', auth_error:'auth error', rate_limited:'rate limited', provider_error:'provider error', error:'error', unknown:'unknown'})[status] || status || 'unknown';

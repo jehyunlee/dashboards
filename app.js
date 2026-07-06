@@ -1,4 +1,4 @@
-const DATA_URL = 'https://raw.githubusercontent.com/jehyunlee/dashboards/main/data/macmini.json';
+const DATA_URL = 'https://api.github.com/repos/jehyunlee/dashboards/contents/data/macmini.json?ref=main';
 let zoom = Number(localStorage.getItem('dashZoom') || '1');
 const $ = (id) => document.getElementById(id);
 const surface = $('zoomSurface');
@@ -10,6 +10,12 @@ function fmtAge(ms){ if(!Number.isFinite(ms)) return 'unknown'; const s=Math.max
 function cls(status){ return status==='ok'?'ok':status==='warn'?'warn':status==='bad'?'bad':'unknown'; }
 function setBadge(cardId, status, detail){ const card=$(cardId); const b=card.querySelector('.badge'); b.className=`badge ${cls(status)}`; b.textContent=status||'unknown'; const p=card.querySelector('p'); p.textContent=detail||'No data.'; }
 function eventLine(e){ return `${e.time||''} — ${e.message||JSON.stringify(e)}`; }
+function decodeData(payload){
+  if(!payload || !payload.content) return payload;
+  const bin = atob(String(payload.content).replace(/\n/g,''));
+  const bytes = Uint8Array.from(bin, c => c.charCodeAt(0));
+  return JSON.parse(new TextDecoder('utf-8').decode(bytes));
+}
 function renderSshTimeline(history){
   const el = $('sshTimeline'); if(!el) return;
   const slotMs = 5 * 60 * 1000, slots = 48;
@@ -34,7 +40,7 @@ function renderSshTimeline(history){
 }
 async function refresh(){
   try{
-    const r=await fetch(`${DATA_URL}?t=${Date.now()}`, {cache:'no-store'}); if(!r.ok) throw new Error(`HTTP ${r.status}`); const d=await r.json();
+    const r=await fetch(`${DATA_URL}&t=${Date.now()}`, {cache:'no-store'}); if(!r.ok) throw new Error(`HTTP ${r.status}`); const d=decodeData(await r.json());
     const age=ageMs(d.updated_at); const stale=age>10*60*1000; const offline=age>30*60*1000;
     const overall = offline ? 'bad' : stale ? 'warn' : (d.overall || 'ok');
     $('hero').className=`hero status-${cls(overall)}`; $('overallTitle').textContent = overall==='ok' ? 'All systems operational' : overall==='warn' ? 'Degraded / stale heartbeat' : 'Offline or unreachable';

@@ -1,6 +1,6 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-06T11:09:05.609423Z",
+  "updated_at": "2026-07-06T11:14:10.770250Z",
   "overall": "ok",
   "summary": "Heartbeat pushed from Mac mini.",
   "checks": {
@@ -103,6 +103,10 @@
     {
       "time": "2026-07-06T11:09:05.609423Z",
       "message": "heartbeat overall=ok, digest=idle, done=3/11"
+    },
+    {
+      "time": "2026-07-06T11:14:10.770250Z",
+      "message": "heartbeat overall=ok, digest=idle, done=3/11"
     }
   ],
   "ssh_history": [
@@ -136,6 +140,10 @@
     },
     {
       "time": "2026-07-06T11:09:05.609423Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-06T11:14:10.770250Z",
       "status": "pass"
     }
   ]

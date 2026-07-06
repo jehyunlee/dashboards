@@ -28,6 +28,7 @@ KEYS_ENV = Path(os.environ.get("PC_KEYS_ENV", str(Path.home() / "pc_agent" / "ke
 LOCAL_KEYS = Path(os.environ.get("PC_LOCAL_KEYS", str(Path.home() / "Documents" / "paper-curation" / "docs" / "_local_keys.json"))).expanduser()
 DASHBOARD_KEYS = Path(os.environ.get("PC_DASHBOARD_KEYS", str(Path.home() / "pc_agent" / "dashboard_keys.json"))).expanduser()
 OTEL_USAGE = Path(os.environ.get("PC_OTEL_USAGE", str(Path.home() / "pc_agent" / "otel" / "usage_local.json"))).expanduser()
+OTEL_USAGE_API = Path(os.environ.get("PC_OTEL_USAGE_API", str(Path.home() / "pc_agent" / "otel" / "usage_api_local.json"))).expanduser()
 
 SENSITIVE_RE = re.compile(r"(sk-(?:proj-)?[^\s'\"},]+|AIza[^\s'\"},]+|[A-Za-z0-9_\-]{20,}\.[A-Za-z0-9_\-]{20,}\.[A-Za-z0-9_\-]{20,})")
 
@@ -399,11 +400,11 @@ def anthropic_usage_series(admin_key: str, now: datetime, span_min: int = 180, b
             url = None
     return {"available": ok, "bin_seconds": bin_min * 60, "span_minutes": span_min, "points": [{"t": k, "tokens": v} for k, v in sorted(bins.items())]}
 
-def subscription_series(provider_id: str, now: datetime, span_min: int = 180, bin_min: int = 5) -> dict[str, Any]:
+def _bins_series(path: Path, provider_id: str, now: datetime, source: str, span_min: int = 180, bin_min: int = 5) -> dict[str, Any]:
     try:
-        state = json.loads(OTEL_USAGE.read_text(encoding="utf-8"))
+        state = json.loads(path.read_text(encoding="utf-8"))
     except Exception:
-        return {"available": False, "detail": "Subscription telemetry not configured (no OpenTelemetry data yet)."}
+        return {"available": False, "detail": "No telemetry data yet."}
     bins = state.get("bins", {})
     step = bin_min * 60
     end = (int(now.timestamp()) // step) * step
@@ -421,13 +422,21 @@ def subscription_series(provider_id: str, now: datetime, span_min: int = 180, bi
         points.append({"t": datetime.fromtimestamp(bstart, timezone.utc).strftime("%Y-%m-%dT%H:%M:00Z"), "tokens": tok})
     return {
         "available": True,
-        "source": "Claude Code / Codex OpenTelemetry (subscription)",
+        "source": source,
         "bin_seconds": step,
         "span_minutes": span_min,
         "points": points,
         "window_tokens": int(total),
         "window_cost": round(cost, 4),
     }
+
+
+def subscription_series(provider_id: str, now: datetime) -> dict[str, Any]:
+    return _bins_series(OTEL_USAGE, provider_id, now, "Claude Code / Codex / Gemini CLI OpenTelemetry (subscription)")
+
+
+def pipeline_api_series(provider_id: str, now: datetime) -> dict[str, Any]:
+    return _bins_series(OTEL_USAGE_API, provider_id, now, "Pipeline-instrumented API usage")
 
 def make_provider(provider_id: str, label: str) -> dict[str, Any]:
     return {
@@ -666,8 +675,12 @@ def main() -> None:
     providers = [probe_openai(keys), probe_anthropic(keys), probe_gemini(keys)]
     _sub_now = datetime.now(timezone.utc)
     for _p in providers:
-        if _p["id"] in ("anthropic", "openai"):
+        if _p["id"] in ("anthropic", "openai", "gemini"):
             _p["subscription_series"] = subscription_series(_p["id"], _sub_now)
+        if _p["id"] == "gemini":
+            # Gemini has no admin usage API; the metered (API) series comes from
+            # pipeline instrumentation reported to the local usage receiver.
+            _p["usage_series"] = pipeline_api_series("gemini", _sub_now)
     worst = max((status_rank(p["status"]) for p in providers), default=2)
     overall = "ok" if worst == 0 else "warn" if worst <= 2 else "bad"
     connected = sum(1 for p in providers if p.get("connection", {}).get("ok"))

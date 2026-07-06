@@ -127,7 +127,7 @@ function renderProvider(p, samples){
   const u = billing.usage || {};
   const apiMeta = u.available
     ? `30일 ${fmtCompact(u.total_tokens)}${billing.month_to_date_cost !== undefined ? ' · $'+billing.month_to_date_cost : ''}${api ? ' · 최근 3h '+fmtCompact(api.total) : ''}`
-    : 'API usage 미연결';
+    : (api ? `최근 3h ${fmtCompact(api.total)} tokens (파이프라인 계측)` : 'API usage 미연결');
   const apiChart = api
     ? api.html
     : `<p class="nodata">${apiS ? '최근 3시간 API(종량제) 사용 없음' : 'API usage admin API 미연결'}</p>`;

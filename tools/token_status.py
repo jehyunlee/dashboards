@@ -191,6 +191,33 @@ def extract_openai_costs(resp: dict[str, Any]) -> dict[str, Any]:
                 total += float(value)
             currency = currency or amount.get("currency")
     return {"available": True, "month_to_date_cost": round(total, 4), "currency": currency or "usd"}
+def openai_admin_inventory(admin_key: str) -> dict[str, Any]:
+    headers = {"Authorization": f"Bearer {admin_key}"}
+    projects_resp = request_json("https://api.openai.com/v1/organization/projects?limit=100", headers=headers)
+    if not projects_resp["ok"]:
+        return {"available": False, "detail": projects_resp.get("error") or f"HTTP {projects_resp['status_code']}"}
+    projects = projects_resp.get("json", {}).get("data", [])
+    project_count = len(projects) if isinstance(projects, list) else 0
+    api_key_count = 0
+    service_account_count = 0
+    for project in projects if isinstance(projects, list) else []:
+        project_id = project.get("id")
+        if not project_id:
+            continue
+        keys_resp = request_json(f"https://api.openai.com/v1/organization/projects/{project_id}/api_keys?limit=100", headers=headers, timeout=20)
+        if keys_resp["ok"]:
+            api_key_count += len(keys_resp.get("json", {}).get("data", []) or [])
+        service_resp = request_json(f"https://api.openai.com/v1/organization/projects/{project_id}/service_accounts?limit=100", headers=headers, timeout=20)
+        if service_resp["ok"]:
+            service_account_count += len(service_resp.get("json", {}).get("data", []) or [])
+    return {
+        "available": True,
+        "project_count": project_count,
+        "api_key_count": api_key_count,
+        "service_account_count": service_account_count,
+    }
+
+
 
 
 def make_provider(provider_id: str, label: str) -> dict[str, Any]:
@@ -233,6 +260,17 @@ def probe_openai(keys: dict[str, str]) -> dict[str, Any]:
     p["billing"] = extract_openai_costs(costs)
     if p["billing"].get("available"):
         p["billing"]["source"] = "OpenAI organization costs endpoint"
+        if admin_key:
+            inventory = openai_admin_inventory(admin_key)
+            p["billing"]["admin_inventory"] = inventory
+            if (
+                p["billing"].get("month_to_date_cost") == 0
+                and inventory.get("available")
+                and inventory.get("api_key_count") == 0
+                and inventory.get("service_account_count") == 0
+            ):
+                p["billing"]["detail"] = "Admin key cost endpoint is reachable, but this OpenAI organization has 0 project API keys and 0 service accounts. The displayed 0 USD is probably for the wrong/empty organization, not the heavy Gajae Code workload."
+                p["billing"]["confidence"] = "suspect_org_mismatch"
     elif not admin_key:
         p["billing"]["detail"] = "Organization cost not shown: OPENAI_ADMIN_API_KEY/OPENAI_ADMIN_KEY is not configured; rate-limit data above is from the normal API key."
     if not p["token_window"].get("available"):

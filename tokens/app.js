@@ -37,7 +37,8 @@ function windowSource(tw){
 }
 function quotaText(billing){
   if(billing.available && billing.month_to_date_cost !== undefined){
-    return `Month-to-date cost visible: ${billing.month_to_date_cost} ${billing.currency || ''}`.trim();
+    const base = `Month-to-date cost visible: ${billing.month_to_date_cost} ${billing.currency || ''}`.trim();
+    return billing.detail ? `${base}. ${billing.detail}` : base;
   }
   return billing.detail || 'No bounded monthly usage/quota API is configured for this provider.';
 }

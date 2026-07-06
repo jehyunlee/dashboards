@@ -1,6 +1,6 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-06T10:50:00.474342Z",
+  "updated_at": "2026-07-06T10:50:51.047181Z",
   "overall": "warn",
   "summary": "Heartbeat pushed from Mac mini.",
   "checks": {
@@ -10,7 +10,7 @@
     },
     "digest": {
       "status": "warn",
-      "detail": "38926       07:08   0:02.09   0.0 Ss   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --lecture 3"
+      "detail": "38926       07:59   0:02.63   0.0 Ss   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --lecture 3"
     },
     "watchdog": {
       "status": "ok",
@@ -25,7 +25,7 @@
   },
   "processes": {
     "digest": [
-      "38926       07:08   0:02.09   0.0 Ss   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --lecture 3"
+      "38926       07:59   0:02.63   0.0 Ss   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --lecture 3"
     ],
     "watchdog": []
   },
@@ -77,11 +77,19 @@
     {
       "time": "2026-07-06T10:50:00.474342Z",
       "message": "heartbeat overall=warn, digest=running, done=2/11"
+    },
+    {
+      "time": "2026-07-06T10:50:51.047181Z",
+      "message": "heartbeat overall=warn, digest=running, done=2/11"
     }
   ],
   "ssh_history": [
     {
       "time": "2026-07-06T10:50:00.474342Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-06T10:50:51.047181Z",
       "status": "pass"
     }
   ]

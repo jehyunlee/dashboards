@@ -1,6 +1,6 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-06T11:19:16.787444Z",
+  "updated_at": "2026-07-06T11:19:36.855780Z",
   "overall": "ok",
   "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제4강 2026-07-07 06:00입니다.",
   "checks": {
@@ -35,8 +35,6 @@
       "completed_at": "2026-07-06 19:53"
     },
     "course": "Dashun Wang 연구 흐름 따라잡기",
-    "done": 3,
-    "total": 11,
     "steps": [
       {
         "id": "schedule",
@@ -104,7 +102,7 @@
     ],
     "log": {
       "path": "/Users/jehyunlee/pc_agent/dashun_wang/launchd.err",
-      "age_seconds": 51555,
+      "age_seconds": 51575,
       "tail": []
     }
   },
@@ -114,83 +112,15 @@
   },
   "events": [
     {
-      "time": "2026-07-06T10:20:27.914354Z",
-      "message": "heartbeat overall=warn, digest=running, done=2/11"
-    },
-    {
-      "time": "2026-07-06T10:21:44.906461Z",
-      "message": "heartbeat overall=warn, digest=running, done=2/11"
-    },
-    {
-      "time": "2026-07-06T10:25:30.249797Z",
-      "message": "heartbeat overall=warn, digest=running, done=2/11"
-    },
-    {
-      "time": "2026-07-06T10:30:32.701804Z",
-      "message": "heartbeat overall=warn, digest=running, done=2/11"
-    },
-    {
-      "time": "2026-07-06T10:31:58.575183Z",
-      "message": "heartbeat overall=warn, digest=running, done=2/11"
-    },
-    {
-      "time": "2026-07-06T10:33:55.233375Z",
-      "message": "heartbeat overall=warn, digest=running, done=2/11"
-    },
-    {
-      "time": "2026-07-06T10:35:35.032397Z",
-      "message": "heartbeat overall=warn, digest=running, done=2/11"
-    },
-    {
-      "time": "2026-07-06T10:40:40.641329Z",
-      "message": "heartbeat overall=warn, digest=running, done=2/11"
-    },
-    {
-      "time": "2026-07-06T10:45:45.799593Z",
-      "message": "heartbeat overall=warn, digest=running, done=2/11"
-    },
-    {
-      "time": "2026-07-06T10:50:00.474342Z",
-      "message": "heartbeat overall=warn, digest=running, done=2/11"
-    },
-    {
-      "time": "2026-07-06T10:50:51.047181Z",
-      "message": "heartbeat overall=warn, digest=running, done=2/11"
-    },
-    {
-      "time": "2026-07-06T10:55:56.043890Z",
-      "message": "heartbeat overall=ok, digest=idle, done=3/11"
-    },
-    {
-      "time": "2026-07-06T10:58:39.658857Z",
-      "message": "heartbeat overall=ok, digest=idle, done=3/11"
-    },
-    {
-      "time": "2026-07-06T10:58:55.328082Z",
-      "message": "heartbeat overall=ok, digest=idle, done=3/11"
-    },
-    {
-      "time": "2026-07-06T11:04:00.458442Z",
-      "message": "heartbeat overall=ok, digest=idle, done=3/11"
-    },
-    {
-      "time": "2026-07-06T11:05:10.970692Z",
-      "message": "heartbeat overall=ok, digest=idle, done=3/11"
-    },
-    {
-      "time": "2026-07-06T11:09:05.609423Z",
-      "message": "heartbeat overall=ok, digest=idle, done=3/11"
-    },
-    {
-      "time": "2026-07-06T11:14:10.770250Z",
-      "message": "heartbeat overall=ok, digest=idle, done=3/11"
-    },
-    {
       "time": "2026-07-06T11:18:12.010226Z",
       "message": "workflow=idle, current=schedule, target=L4"
     },
     {
       "time": "2026-07-06T11:19:16.787444Z",
+      "message": "workflow=idle, current=schedule, target=L4"
+    },
+    {
+      "time": "2026-07-06T11:19:36.855780Z",
       "message": "workflow=idle, current=schedule, target=L4"
     }
   ],
@@ -237,6 +167,10 @@
     },
     {
       "time": "2026-07-06T11:19:16.787444Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-06T11:19:36.855780Z",
       "status": "pass"
     }
   ]

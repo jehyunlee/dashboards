@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Dashun Wang Mailer Workflow</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">DASHUN WANG MAILER</p>
+      <h1>Workflow Status</h1>
+    </div>
+    <div class="toolbar" aria-label="zoom controls">
+      <button id="zoomOut" type="button">−</button>
+      <span id="zoomLabel">100%</span>
+      <button id="zoomIn" type="button">＋</button>
+      <button id="zoomReset" type="button">Reset</button>
+    </div>
+  </header>
+
+  <main id="zoomSurface" class="zoom-surface">
+    <section class="hero status-unknown" id="hero">
+      <div>
+        <p class="eyebrow">Twice-daily production pipeline</p>
+        <h2 id="overallTitle">Checking…</h2>
+        <p id="overallDetail">Waiting for heartbeat data.</p>
+      </div>
+      <div class="pulse" id="pulse"><span></span></div>
+    </section>
+
+    <section class="grid">
+      <article class="card component" id="currentRunCard">
+        <div class="card-head"><h3>Current / Next Run</h3><span class="badge unknown">unknown</span></div>
+        <p id="currentRunDetail">No data yet.</p>
+      </article>
+      <article class="card component" id="digestCard">
+        <div class="card-head"><h3>Digest Process</h3><span class="badge unknown">unknown</span></div>
+        <p id="digestDetail">No data yet.</p>
+      </article>
+      <article class="card component" id="watchdogCard">
+        <div class="card-head"><h3>Watchdog</h3><span class="badge unknown">unknown</span></div>
+        <p id="watchdogDetail">No data yet.</p>
+      </article>
+      <article class="card component" id="sshCard">
+        <div class="card-head"><h3>Local SSH Daemon</h3><span class="badge unknown">unknown</span></div>
+        <p id="sshDetail">No data yet.</p>
+        <div id="sshTimeline" class="ssh-timeline" aria-label="5 minute local SSH daemon heartbeat timeline"></div>
+        <div class="timeline-legend"><span><i class="pass"></i>Checked OK</span><span><i class="fail"></i>Checked FAIL</span><span><i class="unknown"></i>No sample</span><span>5 min slots</span></div>
+      </article>
+    </section>
+
+    <section class="card wide workflow-card">
+      <div class="card-head">
+        <div>
+          <h3>Production Workflow Tasks</h3>
+          <p id="workflowMode">READY · waiting for heartbeat.</p>
+        </div>
+        <span id="workflowBadge" class="badge unknown">unknown</span>
+      </div>
+      <div class="status-legend">
+        <span><i class="ready"></i>READY</span>
+        <span><i class="progress"></i>ON PROGRESS</span>
+        <span><i class="done"></i>DONE</span>
+        <span><i class="fail"></i>FAIL</span>
+        <span><i class="retry"></i>RETRY</span>
+      </div>
+      <div id="workflowSteps" class="workflow-steps"></div>
+      <pre id="logTail" class="log-tail">No log tail yet.</pre>
+    </section>
+
+    <section class="card wide">
+      <div class="card-head"><h3>Recent Events</h3><span id="updatedAt">—</span></div>
+      <ol id="events" class="events"><li>Waiting for heartbeat.</li></ol>
+    </section>
+  </main>
+
+  <footer>
+    Static GitHub Pages dashboard · data source: <code>GitHub API heartbeat JSON</code> · auto-refresh every 20s
+  </footer>
+  <script src="./app.js?v=20260706-workflow3"></script>
+</body>
+</html>

@@ -24,8 +24,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Prepare static artifact
         run: |
-          mkdir -p _site/data
-          cp index.html app.js style.css _site/
+          mkdir -p _site/data _site/learn
+          cp index.html _site/
+          cp learn/index.html learn/app.js learn/style.css _site/learn/
           cp data/macmini.json _site/data/macmini.json
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

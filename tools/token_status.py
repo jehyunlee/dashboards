@@ -176,7 +176,7 @@ def extract_openai_costs(resp: dict[str, Any]) -> dict[str, Any]:
     if not resp["ok"]:
         detail = "Cost endpoint unavailable."
         if resp["status_code"] in {401, 403}:
-            detail = "Cost endpoint unavailable: invalid or non-admin OpenAI key."
+            detail = "Organization cost not shown: configured key cannot access the OpenAI cost endpoint."
         elif resp.get("error"):
             detail = resp["error"]
         return {"available": False, "status_code": resp["status_code"], "detail": detail}
@@ -254,7 +254,7 @@ def probe_anthropic(keys: dict[str, str]) -> dict[str, Any]:
         p["status"] = auth_status(resp["status_code"])
         detail = "Invalid Anthropic API key configured on Mac mini." if resp["status_code"] in {401, 403} else (resp.get("error") or f"HTTP {resp['status_code']}")
         p["connection"] = {"ok": False, "detail": detail}
-    p["billing"] = {"available": False, "detail": "Anthropic billing/usage totals require Admin API access; no admin key configured."}
+    p["billing"] = {"available": False, "detail": "Monthly usage/cost not shown: Anthropic Admin API key is not configured; Messages API connectivity and rate-limit headers above are valid."}
     if not p["token_window"].get("available"):
         p["notes"].append("Token remaining/reset headers were not available because the model request did not succeed or the provider omitted them.")
     return p

@@ -1,82 +1,82 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-06T20:04:09.805851Z",
-  "overall": "warn",
-  "summary": "제4강 제작·발송 프로세스가 진행 중입니다.",
+  "updated_at": "2026-07-06T20:09:15.086687Z",
+  "overall": "ok",
+  "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제5강 2026-07-07 15:00입니다.",
   "checks": {
     "ssh": {
       "status": "ok",
       "detail": "Local SSH daemon check only: 127.0.0.1:22 is listening on the Mac mini."
     },
     "digest": {
-      "status": "warn",
-      "detail": "12058       04:08   0:01.41   0.0 S    /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --due"
+      "status": "ok",
+      "detail": "No lecture digest currently running."
     },
     "watchdog": {
-      "status": "warn",
-      "detail": "Digest is running but watchdog process is not visible between interval checks."
+      "status": "ok",
+      "detail": "Watchdog launchd installed; interval job may be idle between checks."
     }
   },
   "workflow": {
-    "status": "warn",
-    "mode": "running",
-    "summary": "제4강 제작·발송 프로세스가 진행 중입니다.",
-    "current_step": "tts",
+    "status": "ok",
+    "mode": "idle",
+    "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제5강 2026-07-07 15:00입니다.",
+    "current_step": "schedule",
     "target": {
-      "lecture": 4,
-      "title": "실패의 동역학과 초기 경력의 좌절이 미치는 영향",
-      "scheduled_at": "2026-07-07 05:00",
-      "overdue_minutes": 4,
-      "running": true
+      "lecture": 5,
+      "title": "연구자의 경력 궤적, 관심사 진화, 그리고 '핫 스트릭'",
+      "scheduled_at": "2026-07-07 15:00",
+      "overdue_minutes": 0,
+      "running": false
     },
     "last_completed": {
-      "lecture": 3,
-      "title": "과학의 과학(Science of Science): 데이터, 방법론, 그리고 진화",
-      "completed_at": "2026-07-06 19:53"
+      "lecture": 4,
+      "title": "실패의 동역학과 초기 경력의 좌절이 미치는 영향",
+      "completed_at": "2026-07-07 05:08"
     },
     "course": "Dashun Wang 연구 흐름 따라잡기",
     "steps": [
       {
         "id": "schedule",
         "label": "예약 확인",
-        "detail": "하루 2회 launchd 예약 시각 확인",
-        "status": "done",
-        "current": false
+        "detail": "다음 예약 2026-07-07 15:00",
+        "status": "ready",
+        "current": true
       },
       {
         "id": "start",
         "label": "프로세스 시작",
         "detail": "launchd 또는 watchdog이 digest 실행",
-        "status": "done",
+        "status": "ready",
         "current": false
       },
       {
         "id": "evidence",
         "label": "논문 근거 수집",
         "detail": "핵심 논문·연결 그래프 수집",
-        "status": "done",
+        "status": "ready",
         "current": false
       },
       {
         "id": "report",
         "label": "리포트·HTML 제작",
         "detail": "Deeper Research, 그림, 논문 연결 지도",
-        "status": "done",
+        "status": "ready",
         "current": false
       },
       {
         "id": "script",
         "label": "오디오 대본 생성",
         "detail": "분할 대본 병렬 생성",
-        "status": "done",
+        "status": "ready",
         "current": false
       },
       {
         "id": "tts",
         "label": "TTS·MP3 변환",
-        "detail": "TTS chunks [2/10] · 실패 로그 감지",
-        "status": "fail",
-        "current": true
+        "detail": "Gemini TTS 호출과 MP3 인코딩",
+        "status": "ready",
+        "current": false
       },
       {
         "id": "image",
@@ -102,30 +102,24 @@
     ],
     "log": {
       "path": "/Users/jehyunlee/pc_agent/dashun_wang/launchd.out",
-      "age_seconds": 45,
+      "age_seconds": 70,
       "tail": [
-        "    대본 병렬 생성 4 parts · workers=4",
-        "    대본 4/4 · 4,475자",
-        "    대본 2/4 · 5,150자",
-        "    대본 1/4 · 4,553자",
-        "    대본 3/4 · 4,414자",
-        "    TTS 10 chunks ...",
-        "      [1/10]",
-        "      [2/10]"
+        "      [8/10]",
+        "      [9/10]",
+        "      [10/10]",
+        "     15.8MB · ~35분 (첨부)",
+        "     진도 이미지 생성 (200KB)",
+        "  4) 이메일 발송",
+        "     이메일 성공 (status 200) {\"id\":\"56775f48-0efe-41ec-8cb8-521582a4303f\"}  → ['jehyun.lee@gmail.com', 'jehyunlee@kist.re.kr', 'wjkimrocks@kist.re.kr', 'wjkimrocks@gmail.com', 'yoonjuho@kist.re.kr', 'yoonjuho@hanyang.ac.kr', 'kimth@kist.re.kr', 'skong@kist.re.kr', 'kyulikim@kist.re.kr', 'gold@kist.re.kr', 'wyl4493@kist.re.kr', 'SJ1@kist.re.kr', 'syson@kist.re.kr', 'hyejae@kist.re.kr']",
+        "[agent] 제4강 done 기록."
       ]
     }
   },
   "processes": {
-    "digest": [
-      "12058       04:08   0:01.41   0.0 S    /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --due"
-    ],
+    "digest": [],
     "watchdog": []
   },
   "events": [
-    {
-      "time": "2026-07-06T19:13:17.454856Z",
-      "message": "workflow=idle, current=schedule, target=L4"
-    },
     {
       "time": "2026-07-06T19:18:22.694039Z",
       "message": "workflow=idle, current=schedule, target=L4"
@@ -165,6 +159,10 @@
     {
       "time": "2026-07-06T20:04:09.805851Z",
       "message": "workflow=running, current=tts, target=L4"
+    },
+    {
+      "time": "2026-07-06T20:09:15.086687Z",
+      "message": "workflow=idle, current=schedule, target=L5"
     }
   ],
   "ssh_history": [
@@ -634,6 +632,10 @@
     },
     {
       "time": "2026-07-06T20:04:09.805851Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-06T20:09:15.086687Z",
       "status": "pass"
     }
   ]

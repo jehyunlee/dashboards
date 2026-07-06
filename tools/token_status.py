@@ -23,6 +23,7 @@ BRANCH = os.environ.get("DASHBOARD_BRANCH", "data")
 DATA = REPO / "data" / "tokens.json"
 KEYS_ENV = Path(os.environ.get("PC_KEYS_ENV", str(Path.home() / "pc_agent" / "keys.env"))).expanduser()
 LOCAL_KEYS = Path(os.environ.get("PC_LOCAL_KEYS", str(Path.home() / "Documents" / "paper-curation" / "docs" / "_local_keys.json"))).expanduser()
+DASHBOARD_KEYS = Path(os.environ.get("PC_DASHBOARD_KEYS", str(Path.home() / "pc_agent" / "dashboard_keys.json"))).expanduser()
 
 SENSITIVE_RE = re.compile(r"(sk-(?:proj-)?[^\s'\"},]+|AIza[^\s'\"},]+|[A-Za-z0-9_\-]{20,}\.[A-Za-z0-9_\-]{20,}\.[A-Za-z0-9_\-]{20,})")
 
@@ -78,6 +79,13 @@ def load_keys() -> dict[str, str]:
         try:
             local = json.loads(LOCAL_KEYS.read_text(encoding="utf-8"))
             for key, value in local.items():
+                if isinstance(value, str):
+                    keys[key] = value
+        except Exception:
+            pass
+    if DASHBOARD_KEYS.exists():
+        try:
+            for key, value in json.loads(DASHBOARD_KEYS.read_text(encoding="utf-8")).items():
                 if isinstance(value, str):
                     keys[key] = value
         except Exception:

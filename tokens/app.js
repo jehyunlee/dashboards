@@ -110,22 +110,28 @@ function seriesBars(series){
 
 function renderProvider(p, samples){
   const conn = connectionTicks(samples, p.id);
-  const series = (p.usage_series && p.usage_series.available) ? p.usage_series : null;
-  const acct = seriesBars(series);
-  const api = usageBars(samples, p.id, 'api_used', 'level');
+
+  const subS = (p.subscription_series && p.subscription_series.available) ? p.subscription_series : null;
+  const sub = seriesBars(subS);
+  const subConfigured = !!(p.subscription_series);
+  const subMeta = sub
+    ? `최근 3h ${fmtCompact(sub.total)} tokens${subS.window_cost ? ' · $'+subS.window_cost : ''}`
+    : (subConfigured ? '최근 3h 사용 없음' : '텔레메트리 미설정');
+  const subChart = sub
+    ? sub.html
+    : `<p class="nodata">${subConfigured ? '최근 3시간 구독 사용 없음 (Claude Code/Codex OTel 대기 중)' : '구독 텔레메트리 미설정 — 이 provider는 CLI 구독 사용량이 없음'}</p>`;
+
+  const apiS = (p.usage_series && p.usage_series.available) ? p.usage_series : null;
+  const api = seriesBars(apiS);
   const billing = p.billing || {};
   const u = billing.usage || {};
-  const spanH = series ? Math.round((series.span_minutes || 180) / 60) : 3;
-  const recent = acct ? `최근 ${spanH}h ${fmtCompact(acct.total)}` : null;
-  const acctMeta = u.available
-    ? `30일 ${fmtCompact(u.total_tokens)}${billing.month_to_date_cost !== undefined ? ' · $'+billing.month_to_date_cost : ''}${recent ? ' · '+recent : ''}`
-    : '계정 usage API 미연결';
-  const acctChart = acct
-    ? acct.html
-    : `<p class="nodata">${series ? '최근 3시간 API 사용 없음 (구독/Claude Code 사용량은 API usage에 안 잡힘)' : '계정 usage admin API 미연결'}</p>`;
+  const apiMeta = u.available
+    ? `30일 ${fmtCompact(u.total_tokens)}${billing.month_to_date_cost !== undefined ? ' · $'+billing.month_to_date_cost : ''}${api ? ' · 최근 3h '+fmtCompact(api.total) : ''}`
+    : 'API usage 미연결';
   const apiChart = api
     ? api.html
-    : '<p class="nodata">rate-limit 헤더 없음</p>';
+    : `<p class="nodata">${apiS ? '최근 3시간 API(종량제) 사용 없음' : 'API usage admin API 미연결'}</p>`;
+
   return `<article class="card provider provider-${escapeHtml(p.id)}">
     <div class="card-head"><h3>${escapeHtml(p.label || p.id)}</h3><span class="badge ${cls(p.status)}">${escapeHtml(statusText(p.status))}</span></div>
     <div class="series">
@@ -133,11 +139,11 @@ function renderProvider(p, samples){
       ${conn.html}
     </div>
     <div class="series">
-      <div class="series-head"><span>계정 내 토큰 사용량 · 5분</span><em>${escapeHtml(acctMeta)}</em></div>
-      ${acctChart}
+      <div class="series-head"><span>구독 토큰 사용량 (Claude Code·Codex) · 5분</span><em>${escapeHtml(subMeta)}</em></div>
+      ${subChart}
     </div>
     <div class="series">
-      <div class="series-head"><span>API 토큰 사용량 (rate window) · 5분</span><em>${api ? 'peak '+fmtCompact(api.max) : '—'}</em></div>
+      <div class="series-head"><span>API 토큰 사용량 (종량제) · 5분</span><em>${escapeHtml(apiMeta)}</em></div>
       ${apiChart}
     </div>
   </article>`;

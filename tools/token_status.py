@@ -27,6 +27,7 @@ HISTORY_MAX = int(os.environ.get("PC_TOKENS_HISTORY_MAX", "720"))
 KEYS_ENV = Path(os.environ.get("PC_KEYS_ENV", str(Path.home() / "pc_agent" / "keys.env"))).expanduser()
 LOCAL_KEYS = Path(os.environ.get("PC_LOCAL_KEYS", str(Path.home() / "Documents" / "paper-curation" / "docs" / "_local_keys.json"))).expanduser()
 DASHBOARD_KEYS = Path(os.environ.get("PC_DASHBOARD_KEYS", str(Path.home() / "pc_agent" / "dashboard_keys.json"))).expanduser()
+OTEL_USAGE = Path(os.environ.get("PC_OTEL_USAGE", str(Path.home() / "pc_agent" / "otel" / "usage_local.json"))).expanduser()
 
 SENSITIVE_RE = re.compile(r"(sk-(?:proj-)?[^\s'\"},]+|AIza[^\s'\"},]+|[A-Za-z0-9_\-]{20,}\.[A-Za-z0-9_\-]{20,}\.[A-Za-z0-9_\-]{20,})")
 
@@ -398,6 +399,36 @@ def anthropic_usage_series(admin_key: str, now: datetime, span_min: int = 180, b
             url = None
     return {"available": ok, "bin_seconds": bin_min * 60, "span_minutes": span_min, "points": [{"t": k, "tokens": v} for k, v in sorted(bins.items())]}
 
+def subscription_series(provider_id: str, now: datetime, span_min: int = 180, bin_min: int = 5) -> dict[str, Any]:
+    try:
+        state = json.loads(OTEL_USAGE.read_text(encoding="utf-8"))
+    except Exception:
+        return {"available": False, "detail": "Subscription telemetry not configured (no OpenTelemetry data yet)."}
+    bins = state.get("bins", {})
+    step = bin_min * 60
+    end = (int(now.timestamp()) // step) * step
+    n = span_min // bin_min
+    points = []
+    total = 0.0
+    cost = 0.0
+    for i in range(n):
+        bstart = end - step * (n - 1 - i)
+        rec = bins.get(str(bstart), {}).get(provider_id)
+        tok = int(rec.get("tokens", 0)) if rec else 0
+        if rec:
+            cost += float(rec.get("cost", 0) or 0)
+        total += tok
+        points.append({"t": datetime.fromtimestamp(bstart, timezone.utc).strftime("%Y-%m-%dT%H:%M:00Z"), "tokens": tok})
+    return {
+        "available": True,
+        "source": "Claude Code / Codex OpenTelemetry (subscription)",
+        "bin_seconds": step,
+        "span_minutes": span_min,
+        "points": points,
+        "window_tokens": int(total),
+        "window_cost": round(cost, 4),
+    }
+
 def make_provider(provider_id: str, label: str) -> dict[str, Any]:
     return {
         "id": provider_id,
@@ -633,6 +664,10 @@ def main() -> None:
     keys = load_keys()
     updated = now_iso()
     providers = [probe_openai(keys), probe_anthropic(keys), probe_gemini(keys)]
+    _sub_now = datetime.now(timezone.utc)
+    for _p in providers:
+        if _p["id"] in ("anthropic", "openai"):
+            _p["subscription_series"] = subscription_series(_p["id"], _sub_now)
     worst = max((status_rank(p["status"]) for p in providers), default=2)
     overall = "ok" if worst == 0 else "warn" if worst <= 2 else "bad"
     connected = sum(1 for p in providers if p.get("connection", {}).get("ok"))

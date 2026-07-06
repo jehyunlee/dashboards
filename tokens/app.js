@@ -59,7 +59,9 @@ function usageBars(samples, pid, field, mode){
     const full = samples.map(s => (s[pid] || {})[field]);
     const deltas = full.map((v, i) => {
       if(i === 0) return null;
-      const a = Number(full[i-1]), b = Number(v);
+      const pv = full[i-1], cv = v;
+      if(pv === null || pv === undefined || cv === null || cv === undefined) return null;
+      const a = Number(pv), b = Number(cv);
       if(!Number.isFinite(a) || !Number.isFinite(b)) return null;
       return Math.max(0, b - a);
     });

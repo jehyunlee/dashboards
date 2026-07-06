@@ -230,6 +230,24 @@ def openai_admin_inventory(admin_key: str) -> dict[str, Any]:
         "api_key_count": api_key_count,
         "service_account_count": service_account_count,
     }
+def openai_spend_alerts(admin_key: str) -> dict[str, Any]:
+    headers = {"Authorization": f"Bearer {admin_key}"}
+    resp = request_json("https://api.openai.com/v1/organization/spend_alerts", headers=headers, timeout=20)
+    if not resp["ok"]:
+        return {"available": False, "detail": resp.get("error") or f"HTTP {resp['status_code']}"}
+    alerts = []
+    for item in resp.get("json", {}).get("data", []) or []:
+        cents = item.get("threshold_amount")
+        amount_usd = (float(cents) / 100.0) if isinstance(cents, (int, float)) else None
+        alerts.append({
+            "id": item.get("id"),
+            "interval": item.get("interval"),
+            "currency": item.get("currency") or "USD",
+            "threshold_usd": amount_usd,
+        })
+    return {"available": True, "alerts": alerts}
+
+
 def extract_openai_usage(resp: dict[str, Any]) -> dict[str, Any]:
     if not resp["ok"]:
         return {"available": False, "status_code": resp["status_code"], "detail": resp.get("error") or f"HTTP {resp['status_code']}"}
@@ -337,6 +355,11 @@ def probe_openai(keys: dict[str, str]) -> dict[str, Any]:
         if admin_key:
             usage = openai_month_usage(admin_key, start)
             p["billing"]["usage"] = usage
+            p["billing"]["account_token_quota"] = {
+                "available": False,
+                "detail": "OpenAI API accounts do not expose a fixed cumulative account-token allowance or remaining-token balance through the Admin API. The available account-level controls are rate limits, usage/cost reporting, prepaid billing UI, and spend alerts.",
+            }
+            p["billing"]["spend_alerts"] = openai_spend_alerts(admin_key)
             if usage.get("total_tokens", 0) > 0 and p["billing"].get("month_to_date_cost") == 0:
                 p["billing"]["detail"] = "Usage endpoint shows month-to-date OpenAI API activity, but the cost endpoint currently returns 0 USD/no cost rows. Treat token usage as the reliable signal here; cost may lag or be hidden by billing setup."
                 p["billing"]["confidence"] = "usage_visible_cost_zero"

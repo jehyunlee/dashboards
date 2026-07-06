@@ -39,6 +39,10 @@ function fmtNumber(n){
   const x = Number(n);
   return Number.isFinite(x) ? x.toLocaleString('en-US') : '—';
 }
+function fmtUsd(n){
+  const x = Number(n);
+  return Number.isFinite(x) ? `$${x.toLocaleString('en-US', {maximumFractionDigits: 2})}` : '—';
+}
 function quotaText(billing){
   const usage = billing.usage || {};
   const parts = [];
@@ -50,6 +54,15 @@ function quotaText(billing){
   if(billing.available && billing.month_to_date_cost !== undefined){
     parts.push(`${windowLabel} cost endpoint: ${billing.month_to_date_cost} ${billing.currency || ''}`.trim());
   }
+  const alerts = billing.spend_alerts || {};
+  if(alerts.available && Array.isArray(alerts.alerts) && alerts.alerts.length){
+    const labels = alerts.alerts
+      .map(a => `${fmtUsd(a.threshold_usd)}/${a.interval || 'interval'}`)
+      .join(', ');
+    parts.push(`Account spend alerts: ${labels} — alerts, not a hard token quota`);
+  }
+  const accountQuota = billing.account_token_quota || {};
+  if(accountQuota.detail) parts.push(accountQuota.detail);
   if(billing.detail) parts.push(billing.detail);
   return parts.length ? parts.join('. ') : 'No bounded monthly usage/quota API is configured for this provider.';
 }

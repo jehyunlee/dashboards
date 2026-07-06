@@ -24,10 +24,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Prepare static artifact
         run: |
-          mkdir -p _site/data _site/learn
+          mkdir -p _site/data _site/learn _site/tokens
           cp index.html _site/
           cp learn/index.html learn/app.js learn/style.css _site/learn/
-          cp data/macmini.json _site/data/macmini.json
+          cp tokens/index.html tokens/app.js tokens/style.css _site/tokens/
+          cp data/macmini.json data/tokens.json _site/data/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

@@ -1,27 +1,6 @@
 const DATA_URL = 'https://api.github.com/repos/jehyunlee/dashboards/contents/data/macmini.json?ref=data';
 const RAW_DATA_URL = 'https://raw.githubusercontent.com/jehyunlee/dashboards/data/data/macmini.json';
-let zoom = Number(localStorage.getItem('dashZoom') || '1');
 const $ = (id) => document.getElementById(id);
-const surface = $('zoomSurface');
-
-function setZoom(v){
-  zoom = Math.min(1.6, Math.max(.7, v));
-  surface.style.transform = `scale(${zoom})`;
-  surface.style.marginBottom = `${(zoom - 1) * 260}px`;
-  $('zoomLabel').textContent = `${Math.round(zoom * 100)}%`;
-  localStorage.setItem('dashZoom', String(zoom));
-}
-$('zoomIn').onclick = () => setZoom(zoom + .1);
-$('zoomOut').onclick = () => setZoom(zoom - .1);
-$('zoomReset').onclick = () => setZoom(1);
-setZoom(zoom);
-
-window.addEventListener('wheel', e => {
-  if(!e.ctrlKey && !e.metaKey) return;
-  e.preventDefault();
-  setZoom(zoom + (e.deltaY < 0 ? .06 : -.06));
-}, {passive:false});
-
 function ageMs(iso){
   const t = Date.parse(iso || '');
   return Number.isFinite(t) ? Date.now() - t : Infinity;

@@ -45,6 +45,8 @@ h1,h2,h3,p{margin:0}
   text-transform:uppercase;
 }
 .topbar h1{font-size:clamp(1.5rem,3vw,2.1rem);letter-spacing:-.04em}
+.home{color:#475467;text-decoration:none;border:1px solid var(--line);background:#fff;border-radius:999px;padding:.45rem .8rem;font-weight:800;font-size:.85rem;white-space:nowrap}
+.home:hover{background:#f3f4f6}
 .toolbar{
   display:flex;
   align-items:center;
@@ -66,9 +68,7 @@ button{
 }
 button:hover{background:#e5e7eb}
 #zoomLabel{min-width:3.4rem;text-align:center;font-weight:800;color:#475467;font-size:.9rem}
-.zoom-surface{
-  transform-origin:top center;
-  transition:transform .16s ease;
+main{
   max-width:1180px;
   margin:0 auto;
   padding:1.15rem clamp(1rem,4vw,3rem) 2rem;
@@ -240,6 +240,6 @@ footer{max-width:1180px;margin:0 auto;padding:0 clamp(1rem,4vw,3rem) 2rem;color:
   .toolbar{align-self:stretch;justify-content:center;overflow:auto}
   .hero{align-items:flex-start;flex-direction:column}
   .pulse{width:56px;height:56px}
-  .zoom-surface{padding-left:.8rem;padding-right:.8rem}
+  main{padding-left:.8rem;padding-right:.8rem}
   .card{border-radius:16px}
 }

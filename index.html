@@ -34,6 +34,8 @@
       <article class="card component" id="sshCard">
         <div class="card-head"><h3>SSH / Tailscale</h3><span class="badge unknown">unknown</span></div>
         <p id="sshDetail">No data yet.</p>
+        <div id="sshTimeline" class="ssh-timeline" aria-label="5 minute SSH pass fail timeline"></div>
+        <div class="timeline-legend"><span><i class="pass"></i>Pass</span><span><i class="fail"></i>Fail / missing</span><span>5 min slots</span></div>
       </article>
       <article class="card component" id="digestCard">
         <div class="card-head"><h3>Lecture Digest</h3><span class="badge unknown">unknown</span></div>
@@ -64,6 +66,6 @@
   <footer>
     Static dashboard on GitHub Pages · data source: <code>raw GitHub heartbeat JSON</code> · auto-refresh every 20s
   </footer>
-  <script src="./app.js?v=20260706-1024"></script>
+  <script src="./app.js?v=20260706-ssh-history"></script>
 </body>
 </html>

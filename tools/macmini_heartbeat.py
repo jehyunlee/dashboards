@@ -97,6 +97,13 @@ def main():
     run(["git", "config", "user.name", "Mac mini Heartbeat"], 10)
     run(["git", "config", "user.email", "heartbeat@jehyunlee.dev"], 10)
     run(["git", "pull", "--rebase", "origin", "main"], 60)
+    try:
+        prev = json.loads(DATA.read_text(encoding="utf-8")) if DATA.exists() else {}
+    except Exception:
+        prev = {}
+    ssh_history = list(prev.get("ssh_history", []))
+    ssh_history.append({"time": now, "status": "pass" if ssh_ok else "fail"})
+    data["ssh_history"] = ssh_history[-288:]  # 24h at 5-minute cadence
     DATA.write_text(json.dumps(data, ensure_ascii=False, indent=2)+"\n", encoding="utf-8")
     cp=run(["git","status","--short","data/macmini.json"], 20)
     if cp.stdout.strip():

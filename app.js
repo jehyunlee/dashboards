@@ -10,6 +10,28 @@ function fmtAge(ms){ if(!Number.isFinite(ms)) return 'unknown'; const s=Math.max
 function cls(status){ return status==='ok'?'ok':status==='warn'?'warn':status==='bad'?'bad':'unknown'; }
 function setBadge(cardId, status, detail){ const card=$(cardId); const b=card.querySelector('.badge'); b.className=`badge ${cls(status)}`; b.textContent=status||'unknown'; const p=card.querySelector('p'); p.textContent=detail||'No data.'; }
 function eventLine(e){ return `${e.time||''} — ${e.message||JSON.stringify(e)}`; }
+function renderSshTimeline(history){
+  const el = $('sshTimeline'); if(!el) return;
+  const slotMs = 5 * 60 * 1000, slots = 48;
+  const nowBucket = Math.floor(Date.now() / slotMs);
+  const byBucket = new Map();
+  (history || []).forEach(h => {
+    const t = Date.parse(h.time || h.updated_at || '');
+    if(Number.isFinite(t)) byBucket.set(Math.floor(t / slotMs), (h.status || '').toLowerCase());
+  });
+  let pass = 0, fail = 0, html = '';
+  for(let b = nowBucket - slots + 1; b <= nowBucket; b++){
+    const s = byBucket.get(b);
+    const ok = s === 'pass' || s === 'ok';
+    const state = byBucket.size ? (ok ? 'pass' : 'fail') : 'unknown';
+    if(state === 'pass') pass++; else if(state === 'fail') fail++;
+    const tm = new Date(b * slotMs).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+    html += `<span class="ssh-slot ${state}" title="${tm} · ${state.toUpperCase()}"></span>`;
+  }
+  el.innerHTML = html;
+  const ssh = history && history.length ? history[history.length - 1] : null;
+  if(ssh) $('sshDetail').textContent += ` · 5분 슬롯: ${pass} pass / ${fail} fail-missing`;
+}
 async function refresh(){
   try{
     const r=await fetch(`${DATA_URL}?t=${Date.now()}`, {cache:'no-store'}); if(!r.ok) throw new Error(`HTTP ${r.status}`); const d=await r.json();
@@ -20,6 +42,7 @@ async function refresh(){
     $('updatedAt').textContent = d.updated_at ? `updated ${new Date(d.updated_at).toLocaleString()}` : '—';
     setBadge('heartbeatCard', offline?'bad':stale?'warn':'ok', `Last heartbeat ${fmtAge(age)} from ${d.host||'unknown host'}.`);
     const ssh = d.checks?.ssh || {}; setBadge('sshCard', ssh.status || (offline?'bad':'unknown'), ssh.detail || 'No SSH check detail.');
+    renderSshTimeline(d.ssh_history || []);
     const dg = d.checks?.digest || {}; setBadge('digestCard', dg.status || 'unknown', dg.detail || 'No digest detail.');
     const wd = d.checks?.watchdog || {}; setBadge('watchdogCard', wd.status || 'unknown', wd.detail || 'No watchdog detail.');
     const lec=d.lecture || {}; const done=Number(lec.done||0), total=Number(lec.total||0); const pct=total?Math.round(done*100/total):0; $('lectureProgress').firstElementChild.style.width=`${pct}%`; $('lectureBadge').className=`badge ${cls(lec.status||'unknown')}`; $('lectureBadge').textContent=lec.status||'unknown'; $('lectureDetail').textContent=`${done}/${total} completed. ${lec.current ? 'Current/next: '+lec.current : ''}`;

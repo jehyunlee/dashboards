@@ -322,6 +322,82 @@ def openai_month_usage(admin_key: str, start: int) -> dict[str, Any]:
 
 
 
+def _bin_key(dt: datetime, bin_min: int) -> str:
+    m = (dt.minute // bin_min) * bin_min
+    return dt.replace(minute=m, second=0, microsecond=0).strftime("%Y-%m-%dT%H:%M:00Z")
+
+
+def _empty_bins(now: datetime, span_min: int, bin_min: int) -> dict[str, int]:
+    end = now.replace(second=0, microsecond=0)
+    end = end.replace(minute=(end.minute // bin_min) * bin_min)
+    n = span_min // bin_min
+    bins: dict[str, int] = {}
+    for i in range(n):
+        t = end - timedelta(minutes=bin_min * (n - 1 - i))
+        bins[t.strftime("%Y-%m-%dT%H:%M:00Z")] = 0
+    return bins
+
+
+def openai_usage_series(admin_key: str, now: datetime, span_min: int = 180, bin_min: int = 5) -> dict[str, Any]:
+    headers = {"Authorization": f"Bearer {admin_key}"}
+    start = int((now - timedelta(minutes=span_min)).timestamp())
+    bins = _empty_bins(now, span_min, bin_min)
+    ok = False
+    for ep in ("completions", "embeddings"):
+        resp = request_json(f"https://api.openai.com/v1/organization/usage/{ep}?start_time={start}&bucket_width=1m&limit={span_min}", headers=headers, timeout=45)
+        if not resp["ok"]:
+            continue
+        ok = True
+        for bucket in resp.get("json", {}).get("data", []) or []:
+            st = bucket.get("start_time")
+            if st is None:
+                continue
+            key = _bin_key(datetime.fromtimestamp(st, timezone.utc), bin_min)
+            if key not in bins:
+                continue
+            for r in bucket.get("results", []) or []:
+                bins[key] += int(r.get("input_tokens") or 0) + int(r.get("output_tokens") or 0)
+    return {"available": ok, "bin_seconds": bin_min * 60, "span_minutes": span_min, "points": [{"t": k, "tokens": v} for k, v in sorted(bins.items())]}
+
+
+def anthropic_usage_series(admin_key: str, now: datetime, span_min: int = 180, bin_min: int = 5) -> dict[str, Any]:
+    headers = {"x-api-key": admin_key, "anthropic-version": "2023-06-01"}
+    base = {"starting_at": (now - timedelta(minutes=span_min)).strftime("%Y-%m-%dT%H:%M:00Z"), "bucket_width": "1m", "limit": "60"}
+    bins = _empty_bins(now, span_min, bin_min)
+    url = "https://api.anthropic.com/v1/organizations/usage_report/messages?" + urllib.parse.urlencode(base)
+    ok = False
+    pages = 0
+    while url and pages < 8:
+        resp = request_json(url, headers=headers, timeout=45)
+        if not resp["ok"]:
+            break
+        ok = True
+        body = resp.get("json", {})
+        for bucket in body.get("data", []) or []:
+            st = bucket.get("starting_at")
+            if not st:
+                continue
+            try:
+                bt = datetime.strptime(st, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=timezone.utc)
+            except Exception:
+                continue
+            key = _bin_key(bt, bin_min)
+            if key not in bins:
+                continue
+            for r in bucket.get("results", []) or []:
+                bins[key] += int(r.get("uncached_input_tokens") or 0) + int(r.get("output_tokens") or 0) + int(r.get("cache_read_input_tokens") or 0)
+                cc = r.get("cache_creation") or {}
+                if isinstance(cc, dict):
+                    bins[key] += int(cc.get("ephemeral_1h_input_tokens") or 0) + int(cc.get("ephemeral_5m_input_tokens") or 0)
+        if body.get("has_more") and body.get("next_page"):
+            nxt = dict(base)
+            nxt["page"] = body["next_page"]
+            url = "https://api.anthropic.com/v1/organizations/usage_report/messages?" + urllib.parse.urlencode(nxt)
+            pages += 1
+        else:
+            url = None
+    return {"available": ok, "bin_seconds": bin_min * 60, "span_minutes": span_min, "points": [{"t": k, "tokens": v} for k, v in sorted(bins.items())]}
+
 def make_provider(provider_id: str, label: str) -> dict[str, Any]:
     return {
         "id": provider_id,
@@ -371,6 +447,7 @@ def probe_openai(keys: dict[str, str]) -> dict[str, Any]:
                 "detail": "OpenAI API accounts do not expose a fixed cumulative account-token allowance or remaining-token balance through the Admin API. The available account-level controls are rate limits, usage/cost reporting, prepaid billing UI, and spend alerts.",
             }
             p["billing"]["spend_alerts"] = openai_spend_alerts(admin_key)
+            p["usage_series"] = openai_usage_series(admin_key, datetime.now(timezone.utc))
             if usage.get("total_tokens", 0) > 0 and p["billing"].get("month_to_date_cost") == 0:
                 p["billing"]["detail"] = "Usage endpoint shows month-to-date OpenAI API activity, but the cost endpoint currently returns 0 USD/no cost rows. Treat token usage as the reliable signal here; cost may lag or be hidden by billing setup."
                 p["billing"]["confidence"] = "usage_visible_cost_zero"
@@ -463,6 +540,7 @@ def probe_anthropic(keys: dict[str, str]) -> dict[str, Any]:
             p["billing"] = report
         else:
             p["billing"] = {"available": False, "detail": f"Anthropic admin usage/cost unavailable: {report.get('detail')}"}
+        p["usage_series"] = anthropic_usage_series(admin_key, datetime.now(timezone.utc))
     else:
         p["billing"] = {"available": False, "detail": "Monthly usage/cost not shown: Anthropic Admin API key is not configured; Messages API connectivity and rate-limit headers above are valid."}
     if not p["token_window"].get("available"):

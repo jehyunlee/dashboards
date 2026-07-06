@@ -2,7 +2,7 @@ const SNAP_SAME = '../data/tokens.json';
 const SNAP_RAW = 'https://raw.githubusercontent.com/jehyunlee/dashboards/data/data/tokens.json';
 const HIST_SAME = '../data/tokens_history.json';
 const HIST_RAW = 'https://raw.githubusercontent.com/jehyunlee/dashboards/data/data/tokens_history.json';
-const VISIBLE = 60; // 60 ticks x 5 min = last 5 hours
+const VISIBLE = 36; // 36 ticks x 5 min = last 3 hours
 const $ = (id) => document.getElementById(id);
 
 function ageMs(iso){ const t = Date.parse(iso || ''); return Number.isFinite(t) ? Date.now() - t : Infinity; }
@@ -90,18 +90,39 @@ function usageBars(samples, pid, field, mode){
     </div>`};
 }
 
+function seriesBars(series){
+  const points = (series && series.points) || [];
+  if(!points.length) return null;
+  const vals = points.map(p => Number(p.tokens) || 0);
+  const max = Math.max(1, ...vals);
+  const total = vals.reduce((a, b) => a + b, 0);
+  const bars = points.map(p => {
+    const v = Number(p.tokens) || 0;
+    const h = v <= 0 ? 0 : Math.max(3, Math.round(v / max * 100));
+    return `<span class="bar" style="height:${h}%" title="${escapeHtml(p.t)}: ${fmtFull(v)} tokens"></span>`;
+  }).join('');
+  return {max, total, html:`
+    <div class="chart">
+      <div class="yaxis"><span>${fmtCompact(max)}</span><span>${fmtCompact(max/2)}</span><span>0</span></div>
+      <div class="plot">${bars}</div>
+    </div>`};
+}
+
 function renderProvider(p, samples){
   const conn = connectionTicks(samples, p.id);
-  const acct = usageBars(samples, p.id, 'account_tokens', 'delta');
+  const series = (p.usage_series && p.usage_series.available) ? p.usage_series : null;
+  const acct = seriesBars(series);
   const api = usageBars(samples, p.id, 'api_used', 'level');
   const billing = p.billing || {};
   const u = billing.usage || {};
+  const spanH = series ? Math.round((series.span_minutes || 180) / 60) : 3;
+  const recent = acct ? `최근 ${spanH}h ${fmtCompact(acct.total)}` : null;
   const acctMeta = u.available
-    ? `30일 누적 ${fmtCompact(u.total_tokens)} · ${billing.month_to_date_cost !== undefined ? '$'+billing.month_to_date_cost : 'cost n/a'}`
+    ? `30일 ${fmtCompact(u.total_tokens)}${billing.month_to_date_cost !== undefined ? ' · $'+billing.month_to_date_cost : ''}${recent ? ' · '+recent : ''}`
     : '계정 usage API 미연결';
   const acctChart = acct
     ? acct.html
-    : `<p class="nodata">${u.available ? '아직 변화 없음' : '계정 usage admin API 미연결'}</p>`;
+    : `<p class="nodata">${series ? '최근 3시간 API 사용 없음 (구독/Claude Code 사용량은 API usage에 안 잡힘)' : '계정 usage admin API 미연결'}</p>`;
   const apiChart = api
     ? api.html
     : '<p class="nodata">rate-limit 헤더 없음</p>';

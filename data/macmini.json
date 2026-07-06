@@ -1,6 +1,6 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-06T10:21:44.906461Z",
+  "updated_at": "2026-07-06T10:25:30.249797Z",
   "overall": "warn",
   "summary": "Heartbeat pushed from Mac mini.",
   "checks": {
@@ -10,7 +10,7 @@
     },
     "digest": {
       "status": "warn",
-      "detail": "36932       03:39   0:00.70   0.0 Ss   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --lecture 3"
+      "detail": "37406       01:45   0:00.02   0.0 Ss   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --lecture 3 (low CPU; watchdog monitors freeze)"
     },
     "watchdog": {
       "status": "ok",
@@ -25,7 +25,8 @@
   },
   "processes": {
     "digest": [
-      "36932       03:39   0:00.70   0.0 Ss   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --lecture 3"
+      "37406       01:45   0:00.02   0.0 Ss   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --lecture 3",
+      "37445       01:17   0:00.01   0.0 Ss   zsh -c \\012  for i in $(seq 1 8); do\\012    if ! pgrep -f \"agent_lecture_digest.py\" >/dev/null; then echo \"=== 종료 ($i) ===\"; break; fi\\012    sleep 45\\012  done\\012  echo \"=== L3 log tail ===\"; tail -16 ~/pc_agent/dashun_wang/l3_audio40_restart.log 2>/dev/null\\012  echo \"=== other logs ===\"; tail -8 ~/pc_agent/dashun_wang/watchdog_l03.log 2>/dev/null\\012  echo \"=== ledger ===\"; /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python - <<\"PY\"\\012import json\\012L=json.load(open(\"/Users/jehyunlee/pc_agent/dashun_wang/curriculum.json\"))[\"lectures\"][2]\\012print(L.get(\"status\"), L.get(\"completed_at\"), L.get(\"artifacts\"))\\012PY\\012  echo \"=== artifacts ===\"; ls -lh ~/pc_agent/dashun_wang/lectures/lecture_03.* 2>/dev/null | awk \"{print \\$5,\\$NF}\"\\012"
     ],
     "watchdog": []
   },
@@ -44,6 +45,10 @@
     },
     {
       "time": "2026-07-06T10:21:44.906461Z",
+      "message": "heartbeat overall=warn, digest=running, done=2/11"
+    },
+    {
+      "time": "2026-07-06T10:25:30.249797Z",
       "message": "heartbeat overall=warn, digest=running, done=2/11"
     }
   ]

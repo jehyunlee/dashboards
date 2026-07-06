@@ -44,10 +44,10 @@
         <p id="watchdogDetail">No data yet.</p>
       </article>
       <article class="card component" id="sshCard">
-        <div class="card-head"><h3>SSH / Tailscale</h3><span class="badge unknown">unknown</span></div>
+        <div class="card-head"><h3>Local SSH Daemon</h3><span class="badge unknown">unknown</span></div>
         <p id="sshDetail">No data yet.</p>
-        <div id="sshTimeline" class="ssh-timeline" aria-label="5 minute SSH pass fail timeline"></div>
-        <div class="timeline-legend"><span><i class="pass"></i>Pass</span><span><i class="fail"></i>Fail / missing</span><span>5 min slots</span></div>
+        <div id="sshTimeline" class="ssh-timeline" aria-label="5 minute local SSH daemon heartbeat timeline"></div>
+        <div class="timeline-legend"><span><i class="pass"></i>Checked OK</span><span><i class="fail"></i>Checked FAIL</span><span><i class="unknown"></i>No sample</span><span>5 min slots</span></div>
       </article>
     </section>
 
@@ -79,6 +79,6 @@
   <footer>
     Static GitHub Pages dashboard · data source: <code>GitHub API heartbeat JSON</code> · auto-refresh every 20s
   </footer>
-  <script src="./app.js?v=20260706-workflow2"></script>
+  <script src="./app.js?v=20260706-workflow3"></script>
 </body>
 </html>

@@ -103,18 +103,18 @@ function renderSshTimeline(history){
     const t = Date.parse(h.time || h.updated_at || '');
     if(Number.isFinite(t)) byBucket.set(Math.floor(t / slotMs), (h.status || '').toLowerCase());
   });
-  let pass = 0, fail = 0, html = '';
+  let pass = 0, fail = 0, unknown = 0, html = '';
   for(let b = nowBucket - slots + 1; b <= nowBucket; b++){
     const s = byBucket.get(b);
     const ok = s === 'pass' || s === 'ok';
-    const state = byBucket.size ? (ok ? 'pass' : 'fail') : 'unknown';
-    if(state === 'pass') pass++; else if(state === 'fail') fail++;
+    const state = s ? (ok ? 'pass' : 'fail') : 'unknown';
+    if(state === 'pass') pass++; else if(state === 'fail') fail++; else unknown++;
     const tm = new Date(b * slotMs).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
     html += `<span class="ssh-slot ${state}" title="${tm} · ${state.toUpperCase()}"></span>`;
   }
   el.innerHTML = html;
   const ssh = history && history.length ? history[history.length - 1] : null;
-  if(ssh) $('sshDetail').textContent += ` · 5분 슬롯: ${pass} pass / ${fail} fail-missing`;
+  if(ssh) $('sshDetail').textContent += ` · 5분 슬롯: ${pass} ok / ${fail} fail / ${unknown} no-sample`;
 }
 
 function renderWorkflow(w){

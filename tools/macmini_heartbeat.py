@@ -367,7 +367,7 @@ def main():
         "overall": overall,
         "summary": workflow["summary"],
         "checks": {
-            "ssh": {"status": "ok" if ssh_ok else "warn", "detail": "Local SSH port 22 is listening." if ssh_ok else "Local SSH port 22 is not reachable."},
+            "ssh": {"status": "ok" if ssh_ok else "warn", "detail": "Local SSH daemon check only: 127.0.0.1:22 is listening on the Mac mini." if ssh_ok else "Local SSH daemon check only: 127.0.0.1:22 is not reachable on the Mac mini."},
             "digest": {"status": dg_status, "detail": dg_detail},
             "watchdog": {"status": wd_status, "detail": wd_detail},
         },

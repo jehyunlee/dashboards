@@ -229,6 +229,7 @@ footer{max-width:1180px;margin:0 auto;padding:0 clamp(1rem,4vw,3rem) 2rem;color:
 .timeline-legend i{display:inline-block;width:.65rem;height:.65rem;border-radius:3px}
 .timeline-legend i.pass{background:var(--ok)}
 .timeline-legend i.fail{background:var(--bad)}
+.timeline-legend i.unknown{background:#cbd5e1}
 @media(max-width:1020px){
   .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .workflow-steps{grid-template-columns:repeat(2,minmax(0,1fr))}

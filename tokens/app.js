@@ -135,16 +135,20 @@ function renderProvider(p, samples){
     ? api.html
     : `<p class="nodata">${apiS ? '최근 3시간 API(종량제) 사용 없음' : 'API usage admin API 미연결'}</p>`;
 
+  // Gemini has no usable subscription CLI (Google discontinued the individual
+  // gemini CLI tier), so its panel shows only connection + metered API usage.
+  const showSub = p.id !== 'gemini';
+  const subBlock = showSub ? `
+    <div class="series">
+      <div class="series-head"><span>구독 토큰 사용량 (Claude Code·Codex) · 5분</span><em>${escapeHtml(subMeta)}</em></div>
+      ${subChart}
+    </div>` : '';
   return `<article class="card provider provider-${escapeHtml(p.id)}">
     <div class="card-head"><h3>${escapeHtml(p.label || p.id)}</h3><span class="badge ${cls(p.status)}">${escapeHtml(statusText(p.status))}</span></div>
     <div class="series">
       <div class="series-head"><span>API 접속상태</span><em>${escapeHtml(conn.sub)}</em></div>
       ${conn.html}
-    </div>
-    <div class="series">
-      <div class="series-head"><span>구독 토큰 사용량 (Claude Code·Codex) · 5분</span><em>${escapeHtml(subMeta)}</em></div>
-      ${subChart}
-    </div>
+    </div>${subBlock}
     <div class="series">
       <div class="series-head"><span>API 토큰 사용량 (종량제) · 5분</span><em>${escapeHtml(apiMeta)}</em></div>
       ${apiChart}

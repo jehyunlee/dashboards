@@ -1,6 +1,6 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-06T23:37:51.383407Z",
+  "updated_at": "2026-07-06T23:42:58.206700Z",
   "overall": "ok",
   "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제5강 2026-07-07 15:00입니다.",
   "checks": {
@@ -102,7 +102,7 @@
     ],
     "log": {
       "path": "/Users/jehyunlee/pc_agent/dashun_wang/launchd.out",
-      "age_seconds": 12586,
+      "age_seconds": 12893,
       "tail": [
         "      [8/10]",
         "      [9/10]",
@@ -120,10 +120,6 @@
     "watchdog": []
   },
   "events": [
-    {
-      "time": "2026-07-06T22:46:59.383292Z",
-      "message": "workflow=idle, current=schedule, target=L5"
-    },
     {
       "time": "2026-07-06T22:52:04.546866Z",
       "message": "workflow=idle, current=schedule, target=L5"
@@ -162,6 +158,10 @@
     },
     {
       "time": "2026-07-06T23:37:51.383407Z",
+      "message": "workflow=idle, current=schedule, target=L5"
+    },
+    {
+      "time": "2026-07-06T23:42:58.206700Z",
       "message": "workflow=idle, current=schedule, target=L5"
     }
   ],
@@ -800,6 +800,10 @@
     },
     {
       "time": "2026-07-06T23:37:51.383407Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-06T23:42:58.206700Z",
       "status": "pass"
     }
   ]

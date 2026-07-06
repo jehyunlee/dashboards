@@ -675,7 +675,7 @@ def main() -> None:
     providers = [probe_openai(keys), probe_anthropic(keys), probe_gemini(keys)]
     _sub_now = datetime.now(timezone.utc)
     for _p in providers:
-        if _p["id"] in ("anthropic", "openai", "gemini"):
+        if _p["id"] in ("anthropic", "openai"):
             _p["subscription_series"] = subscription_series(_p["id"], _sub_now)
         if _p["id"] == "gemini":
             # Gemini has no admin usage API; the metered (API) series comes from

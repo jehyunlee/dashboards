@@ -114,12 +114,15 @@ function renderProvider(p, samples){
   const subS = (p.subscription_series && p.subscription_series.available) ? p.subscription_series : null;
   const sub = seriesBars(subS);
   const subConfigured = !!(p.subscription_series);
+  const geminiEol = p.id === 'gemini';
   const subMeta = sub
     ? `최근 3h ${fmtCompact(sub.total)} tokens${subS.window_cost ? ' · $'+subS.window_cost : ''}`
-    : (subConfigured ? '최근 3h 사용 없음' : '텔레메트리 미설정');
+    : (geminiEol ? '개인 CLI 티어 종료' : (subConfigured ? '최근 3h 사용 없음' : '텔레메트리 미설정'));
   const subChart = sub
     ? sub.html
-    : `<p class="nodata">${subConfigured ? '최근 3시간 구독 사용 없음 (Claude Code/Codex OTel 대기 중)' : '구독 텔레메트리 미설정 — 이 provider는 CLI 구독 사용량이 없음'}</p>`;
+    : `<p class="nodata">${geminiEol
+        ? 'Gemini 개인 CLI 구독 종료 (Google → Antigravity 이전) · 구독 사용량 소스 없음'
+        : (subConfigured ? '최근 3시간 구독 사용 없음 (Claude Code/Codex OTel 대기 중)' : '구독 텔레메트리 미설정 — 이 provider는 CLI 구독 사용량이 없음')}</p>`;
 
   const apiS = (p.usage_series && p.usage_series.available) ? p.usage_series : null;
   const api = seriesBars(apiS);

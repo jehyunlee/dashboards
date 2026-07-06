@@ -14,14 +14,15 @@ function plain(v){
   return String(v);
 }
 async function fetchData(){
+  const rawUrl = `${RAW_DATA_URL}?t=${Date.now()}`;
   try{
-    const r = await fetch(`${DATA_URL}&t=${Date.now()}`, {cache:'no-store'});
-    if(!r.ok) throw new Error(`GitHub API HTTP ${r.status}`);
-    return decodeData(await r.json());
-  }catch(apiErr){
-    const r = await fetch(`${RAW_DATA_URL}?t=${Math.floor(Date.now()/60000)}`, {cache:'no-store'});
-    if(!r.ok) throw new Error(`${apiErr.message}; raw HTTP ${r.status}`);
+    const r = await fetch(rawUrl, {cache:'no-store'});
+    if(!r.ok) throw new Error(`raw HTTP ${r.status}`);
     return r.json();
+  }catch(rawErr){
+    const r = await fetch(`${DATA_URL}&t=${Date.now()}`, {cache:'no-store'});
+    if(!r.ok) throw new Error(`${rawErr.message}; GitHub API HTTP ${r.status}`);
+    return decodeData(await r.json());
   }
 }
 function statusText(status){

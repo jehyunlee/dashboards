@@ -3,14 +3,14 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>API Rate Limits</title>
+  <title>API Rate Limits & Quota</title>
   <link rel="stylesheet" href="./style.css">
 </head>
 <body>
   <header class="topbar">
     <div>
       <p class="eyebrow">API PROVIDER STATUS</p>
-      <h1>API Rate Limits</h1>
+      <h1>API Rate Limits & Quota</h1>
     </div>
     <a class="home" href="../">Dashboards</a>
   </header>
@@ -27,7 +27,7 @@
 
     <section class="card wide info">
       <h3>What these numbers mean</h3>
-      <p>Displayed “limit / remaining / reset” values come from provider response rate-limit headers for the current API key and short refill window. They are not monthly total usage, spend, or all Gajae Code traffic. Monthly usage requires provider billing/admin APIs.</p>
+      <p>Displayed “rate limit / left now / refills” values come from provider response headers for a short live refill window. They are not monthly total usage, spend, or all Gajae Code traffic. The “Bounded usage / quota” section below shows provider billing/admin data when available, otherwise exactly what credential is missing.</p>
     </section>
 
     <section id="providers" class="providers"></section>
@@ -41,6 +41,6 @@
   <footer>
     Static GitHub Pages dashboard · data source: <code>data/tokens.json</code> on the private data branch · no API keys are published
   </footer>
-  <script src="./app.js?v=20260706-tokens5"></script>
+  <script src="./app.js?v=20260706-tokens6"></script>
 </body>
 </html>

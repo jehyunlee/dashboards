@@ -35,6 +35,12 @@ function metric(label, val){ return `<div class="metric"><span>${escapeHtml(labe
 function windowSource(tw){
   return tw.available ? `Rate-limit window source: ${tw.source || 'provider headers'}. This is a live refill bucket, not monthly usage.` : `Rate-limit window unavailable: ${tw.source || 'provider did not expose headers'}.`;
 }
+function quotaText(billing){
+  if(billing.available && billing.month_to_date_cost !== undefined){
+    return `Month-to-date cost visible: ${billing.month_to_date_cost} ${billing.currency || ''}`.trim();
+  }
+  return billing.detail || 'No bounded monthly usage/quota API is configured for this provider.';
+}
 function renderProvider(p){
   const tw = p.token_window || {};
   const tokens = tw.tokens || {};
@@ -45,11 +51,7 @@ function renderProvider(p){
   const notes = [...(p.notes || [])];
   if(!tw.available) notes.unshift(windowSource(tw));
   else notes.unshift(windowSource(tw));
-  if(billing.available && billing.month_to_date_cost !== undefined){
-    notes.push(`Month-to-date cost: ${billing.month_to_date_cost} ${billing.currency || ''}`.trim());
-  }else if(billing.detail){
-    notes.push(billing.detail);
-  }
+  const quota = quotaText(billing);
   const usage = probe.usage || {};
   const usageText = Object.keys(usage).length ? Object.entries(usage).map(([k,v]) => `${k}: ${plain(v)}`).join(', ') : '—';
   return `<article class="card provider provider-${escapeHtml(p.id)}">
@@ -70,6 +72,10 @@ function renderProvider(p){
         <dt>Request reset</dt><dd>${value(requests.reset)}</dd>
         <dt>Probe usage</dt><dd>${escapeHtml(usageText)}</dd>
       </dl>
+    </div>
+    <div class="section quota">
+      <h4>Bounded usage / quota</h4>
+      <p>${escapeHtml(quota)}</p>
     </div>
     ${notes.length ? `<div class="note">${notes.map(escapeHtml).join('<br>')}</div>` : ''}
   </article>`;

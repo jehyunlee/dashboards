@@ -174,7 +174,12 @@ def header_token_window(headers: dict[str, str], provider: str) -> dict[str, Any
 
 def extract_openai_costs(resp: dict[str, Any]) -> dict[str, Any]:
     if not resp["ok"]:
-        return {"available": False, "status_code": resp["status_code"], "detail": resp.get("error") or "Cost endpoint unavailable."}
+        detail = "Cost endpoint unavailable."
+        if resp["status_code"] in {401, 403}:
+            detail = "Cost endpoint unavailable: invalid or non-admin OpenAI key."
+        elif resp.get("error"):
+            detail = resp["error"]
+        return {"available": False, "status_code": resp["status_code"], "detail": detail}
     data = resp.get("json", {})
     total = 0.0
     currency = None
@@ -218,7 +223,8 @@ def probe_openai(keys: dict[str, str]) -> dict[str, Any]:
         p["connection"] = {"ok": True, "detail": "Generation API responded."}
     else:
         p["status"] = auth_status(resp["status_code"])
-        p["connection"] = {"ok": False, "detail": resp.get("error") or f"HTTP {resp['status_code']}"}
+        detail = "Invalid OpenAI API key configured on Mac mini." if resp["status_code"] in {401, 403} else (resp.get("error") or f"HTTP {resp['status_code']}")
+        p["connection"] = {"ok": False, "detail": detail}
 
     start = int(datetime(datetime.now(timezone.utc).year, datetime.now(timezone.utc).month, 1, tzinfo=timezone.utc).timestamp())
     costs = request_json(f"https://api.openai.com/v1/organization/costs?start_time={start}&bucket_width=1d&limit=31", headers={"Authorization": f"Bearer {key}"})
@@ -246,7 +252,8 @@ def probe_anthropic(keys: dict[str, str]) -> dict[str, Any]:
         p["connection"] = {"ok": True, "detail": "Messages API responded."}
     else:
         p["status"] = auth_status(resp["status_code"])
-        p["connection"] = {"ok": False, "detail": resp.get("error") or f"HTTP {resp['status_code']}"}
+        detail = "Invalid Anthropic API key configured on Mac mini." if resp["status_code"] in {401, 403} else (resp.get("error") or f"HTTP {resp['status_code']}")
+        p["connection"] = {"ok": False, "detail": detail}
     p["billing"] = {"available": False, "detail": "Anthropic billing/usage totals require Admin API access; no admin key configured."}
     if not p["token_window"].get("available"):
         p["notes"].append("Token remaining/reset headers were not available because the model request did not succeed or the provider omitted them.")
@@ -288,7 +295,8 @@ def probe_gemini(keys: dict[str, str]) -> dict[str, Any]:
         p["connection"] = {"ok": True, "detail": "Generative Language API responded."}
     else:
         p["status"] = auth_status(resp["status_code"])
-        p["connection"] = {"ok": False, "detail": resp.get("error") or f"HTTP {resp['status_code']}"}
+        detail = "Invalid Gemini API key configured on Mac mini." if resp["status_code"] in {401, 403} else (resp.get("error") or f"HTTP {resp['status_code']}")
+        p["connection"] = {"ok": False, "detail": detail}
     p["billing"] = {"available": False, "detail": "Gemini API keys do not expose project quota remaining through this endpoint; use Google Cloud quota APIs with project credentials for exact remaining quota."}
     if not p["token_window"].get("available"):
         p["notes"].append("No rate-limit token headers were exposed. The page shows API connectivity and per-probe token usage instead.")

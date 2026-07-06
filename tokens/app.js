@@ -7,6 +7,12 @@ function fmtAge(ms){ if(!Number.isFinite(ms)) return 'unknown'; const s=Math.max
 function cls(status){ return status === 'ok' ? 'ok' : ['missing','rate_limited','unknown'].includes(status) ? 'warn' : status === 'warn' ? 'warn' : 'bad'; }
 function escapeHtml(s){ return String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
 function decodeData(payload){ if(!payload || !payload.content) return payload; const bin=atob(String(payload.content).replace(/\n/g,'')); const bytes=Uint8Array.from(bin, c=>c.charCodeAt(0)); return JSON.parse(new TextDecoder('utf-8').decode(bytes)); }
+function plain(v){
+  if(v === null || v === undefined || v === '') return '—';
+  if(Array.isArray(v)) return v.map(plain).join('; ');
+  if(typeof v === 'object') return Object.entries(v).map(([k,val]) => `${k}=${plain(val)}`).join(', ');
+  return String(v);
+}
 async function fetchData(){
   try{
     const r = await fetch(`${DATA_URL}&t=${Date.now()}`, {cache:'no-store'});
@@ -38,7 +44,7 @@ function renderProvider(p){
     notes.push(billing.detail);
   }
   const usage = probe.usage || {};
-  const usageText = Object.keys(usage).length ? Object.entries(usage).map(([k,v]) => `${k}: ${v}`).join(', ') : '—';
+  const usageText = Object.keys(usage).length ? Object.entries(usage).map(([k,v]) => `${k}: ${plain(v)}`).join(', ') : '—';
   return `<article class="card provider provider-${escapeHtml(p.id)}">
     <div class="card-head"><h3>${escapeHtml(p.label || p.id)}</h3><span class="badge ${cls(p.status)}">${escapeHtml(statusText(p.status))}</span></div>
     <p>${escapeHtml(conn.detail || 'No connection detail.')}</p>

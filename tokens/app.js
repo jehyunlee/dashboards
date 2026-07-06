@@ -35,12 +35,22 @@ function metric(label, val){ return `<div class="metric"><span>${escapeHtml(labe
 function windowSource(tw){
   return tw.available ? `Rate-limit window source: ${tw.source || 'provider headers'}. This is a live refill bucket, not monthly usage.` : `Rate-limit window unavailable: ${tw.source || 'provider did not expose headers'}.`;
 }
+function fmtNumber(n){
+  const x = Number(n);
+  return Number.isFinite(x) ? x.toLocaleString('en-US') : '—';
+}
 function quotaText(billing){
-  if(billing.available && billing.month_to_date_cost !== undefined){
-    const base = `Month-to-date cost visible: ${billing.month_to_date_cost} ${billing.currency || ''}`.trim();
-    return billing.detail ? `${base}. ${billing.detail}` : base;
+  const usage = billing.usage || {};
+  const parts = [];
+  if(usage.available){
+    parts.push(`Month-to-date API usage: ${fmtNumber(usage.total_tokens)} tokens, ${fmtNumber(usage.total_requests)} requests`);
+    parts.push(`completions in/out ${fmtNumber(usage.completion_input_tokens)}/${fmtNumber(usage.completion_output_tokens)}, embeddings ${fmtNumber(usage.embedding_input_tokens)} tokens`);
   }
-  return billing.detail || 'No bounded monthly usage/quota API is configured for this provider.';
+  if(billing.available && billing.month_to_date_cost !== undefined){
+    parts.push(`cost endpoint: ${billing.month_to_date_cost} ${billing.currency || ''}`.trim());
+  }
+  if(billing.detail) parts.push(billing.detail);
+  return parts.length ? parts.join('. ') : 'No bounded monthly usage/quota API is configured for this provider.';
 }
 function renderProvider(p){
   const tw = p.token_window || {};

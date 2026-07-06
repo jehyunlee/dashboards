@@ -183,14 +183,17 @@ def extract_openai_costs(resp: dict[str, Any]) -> dict[str, Any]:
     data = resp.get("json", {})
     total = 0.0
     currency = None
-    for bucket in data.get("data", []) if isinstance(data, dict) else []:
+    rows = 0
+    buckets = data.get("data", []) if isinstance(data, dict) else []
+    for bucket in buckets:
         for item in bucket.get("results", []) or []:
+            rows += 1
             amount = item.get("amount", {}) if isinstance(item, dict) else {}
             value = amount.get("value")
             if isinstance(value, (int, float)):
                 total += float(value)
             currency = currency or amount.get("currency")
-    return {"available": True, "month_to_date_cost": round(total, 4), "currency": currency or "usd"}
+    return {"available": True, "month_to_date_cost": round(total, 4), "currency": currency or "usd", "rows": rows, "buckets": len(buckets)}
 def openai_admin_inventory(admin_key: str) -> dict[str, Any]:
     headers = {"Authorization": f"Bearer {admin_key}"}
     projects_resp = request_json("https://api.openai.com/v1/organization/projects?limit=100", headers=headers)
@@ -216,6 +219,65 @@ def openai_admin_inventory(admin_key: str) -> dict[str, Any]:
         "api_key_count": api_key_count,
         "service_account_count": service_account_count,
     }
+def extract_openai_usage(resp: dict[str, Any]) -> dict[str, Any]:
+    if not resp["ok"]:
+        return {"available": False, "status_code": resp["status_code"], "detail": resp.get("error") or f"HTTP {resp['status_code']}"}
+    data = resp.get("json", {})
+    rows = 0
+    metrics: dict[str, float] = {}
+    buckets = data.get("data", []) if isinstance(data, dict) else []
+    for bucket in buckets:
+        for item in bucket.get("results", []) or []:
+            rows += 1
+            if not isinstance(item, dict):
+                continue
+            for key, value in item.items():
+                if key in {"start_time", "end_time"}:
+                    continue
+                if isinstance(value, (int, float)):
+                    metrics[key] = metrics.get(key, 0) + float(value)
+    return {"available": True, "rows": rows, "buckets": len(buckets), "metrics": metrics}
+
+
+def openai_month_usage(admin_key: str, start: int) -> dict[str, Any]:
+    headers = {"Authorization": f"Bearer {admin_key}"}
+    endpoints = {
+        "completions": "/v1/organization/usage/completions",
+        "embeddings": "/v1/organization/usage/embeddings",
+        "audio_speeches": "/v1/organization/usage/audio_speeches",
+    }
+    by_endpoint: dict[str, Any] = {}
+    for name, path in endpoints.items():
+        resp = request_json(f"https://api.openai.com{path}?start_time={start}&bucket_width=1d&limit=31", headers=headers, timeout=45)
+        by_endpoint[name] = extract_openai_usage(resp)
+
+    completions = by_endpoint.get("completions", {}).get("metrics", {})
+    embeddings = by_endpoint.get("embeddings", {}).get("metrics", {})
+    speeches = by_endpoint.get("audio_speeches", {}).get("metrics", {})
+
+    completion_input = int(completions.get("input_tokens", 0))
+    completion_output = int(completions.get("output_tokens", 0))
+    embedding_input = int(embeddings.get("input_tokens", 0))
+    speech_characters = int(speeches.get("characters", 0))
+    total_requests = int(
+        sum((endpoint.get("metrics", {}).get("num_model_requests", 0) or endpoint.get("metrics", {}).get("num_requests", 0) or 0) for endpoint in by_endpoint.values())
+    )
+    total_tokens = completion_input + completion_output + embedding_input
+    rows = sum(int(endpoint.get("rows", 0) or 0) for endpoint in by_endpoint.values())
+    return {
+        "available": any(endpoint.get("available") for endpoint in by_endpoint.values()),
+        "source": "OpenAI organization usage endpoints",
+        "rows": rows,
+        "total_tokens": total_tokens,
+        "total_requests": total_requests,
+        "completion_input_tokens": completion_input,
+        "completion_output_tokens": completion_output,
+        "embedding_input_tokens": embedding_input,
+        "audio_speech_characters": speech_characters,
+        "endpoints": by_endpoint,
+    }
+
+
 
 
 
@@ -260,6 +322,12 @@ def probe_openai(keys: dict[str, str]) -> dict[str, Any]:
     p["billing"] = extract_openai_costs(costs)
     if p["billing"].get("available"):
         p["billing"]["source"] = "OpenAI organization costs endpoint"
+        if admin_key:
+            usage = openai_month_usage(admin_key, start)
+            p["billing"]["usage"] = usage
+            if usage.get("total_tokens", 0) > 0 and p["billing"].get("month_to_date_cost") == 0:
+                p["billing"]["detail"] = "Usage endpoint shows month-to-date OpenAI API activity, but the cost endpoint currently returns 0 USD/no cost rows. Treat token usage as the reliable signal here; cost may lag or be hidden by billing setup."
+                p["billing"]["confidence"] = "usage_visible_cost_zero"
         if admin_key:
             inventory = openai_admin_inventory(admin_key)
             p["billing"]["admin_inventory"] = inventory

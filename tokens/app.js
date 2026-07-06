@@ -42,12 +42,13 @@ function fmtNumber(n){
 function quotaText(billing){
   const usage = billing.usage || {};
   const parts = [];
+  const windowLabel = billing.window === 'last_30d' ? 'Last 30 days' : 'Month-to-date';
   if(usage.available){
-    parts.push(`Month-to-date API usage: ${fmtNumber(usage.total_tokens)} tokens, ${fmtNumber(usage.total_requests)} requests`);
+    parts.push(`${windowLabel} API usage: ${fmtNumber(usage.total_tokens)} tokens, ${fmtNumber(usage.total_requests)} requests`);
     parts.push(`completions in/out ${fmtNumber(usage.completion_input_tokens)}/${fmtNumber(usage.completion_output_tokens)}, embeddings ${fmtNumber(usage.embedding_input_tokens)} tokens`);
   }
   if(billing.available && billing.month_to_date_cost !== undefined){
-    parts.push(`cost endpoint: ${billing.month_to_date_cost} ${billing.currency || ''}`.trim());
+    parts.push(`${windowLabel} cost endpoint: ${billing.month_to_date_cost} ${billing.currency || ''}`.trim());
   }
   if(billing.detail) parts.push(billing.detail);
   return parts.length ? parts.join('. ') : 'No bounded monthly usage/quota API is configured for this provider.';

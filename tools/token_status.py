@@ -14,7 +14,7 @@ import subprocess
 import time
 import urllib.error
 import urllib.request
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -38,6 +38,17 @@ def sanitize(value: Any, max_len: int = 360) -> str:
     text = SENSITIVE_RE.sub("***", text)
     text = re.sub(r"\*\*\*[A-Za-z0-9]{2,12}", "***", text)
     return text[:max_len]
+def number_value(value: Any) -> float | None:
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            return None
+    return None
+
+
 
 
 def run(cmd: list[str], timeout: int = 30):
@@ -189,9 +200,9 @@ def extract_openai_costs(resp: dict[str, Any]) -> dict[str, Any]:
         for item in bucket.get("results", []) or []:
             rows += 1
             amount = item.get("amount", {}) if isinstance(item, dict) else {}
-            value = amount.get("value")
-            if isinstance(value, (int, float)):
-                total += float(value)
+            value = number_value(amount.get("value"))
+            if value is not None:
+                total += value
             currency = currency or amount.get("currency")
     return {"available": True, "month_to_date_cost": round(total, 4), "currency": currency or "usd", "rows": rows, "buckets": len(buckets)}
 def openai_admin_inventory(admin_key: str) -> dict[str, Any]:
@@ -316,10 +327,11 @@ def probe_openai(keys: dict[str, str]) -> dict[str, Any]:
         detail = "Invalid OpenAI API key configured on Mac mini." if resp["status_code"] in {401, 403} else (resp.get("error") or f"HTTP {resp['status_code']}")
         p["connection"] = {"ok": False, "detail": detail}
 
-    start = int(datetime(datetime.now(timezone.utc).year, datetime.now(timezone.utc).month, 1, tzinfo=timezone.utc).timestamp())
+    start = int((datetime.now(timezone.utc) - timedelta(days=30)).timestamp())
     billing_key = admin_key or key
     costs = request_json(f"https://api.openai.com/v1/organization/costs?start_time={start}&bucket_width=1d&limit=31", headers={"Authorization": f"Bearer {billing_key}"})
     p["billing"] = extract_openai_costs(costs)
+    p["billing"]["window"] = "last_30d"
     if p["billing"].get("available"):
         p["billing"]["source"] = "OpenAI organization costs endpoint"
         if admin_key:

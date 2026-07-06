@@ -1,8 +1,8 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-06T11:14:10.770250Z",
+  "updated_at": "2026-07-06T11:18:12.010226Z",
   "overall": "ok",
-  "summary": "Heartbeat pushed from Mac mini.",
+  "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제4강 2026-07-07 06:00입니다.",
   "checks": {
     "ssh": {
       "status": "ok",
@@ -17,21 +17,102 @@
       "detail": "Watchdog launchd installed; interval job may be idle between checks."
     }
   },
-  "lecture": {
+  "workflow": {
     "status": "ok",
+    "mode": "idle",
+    "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제4강 2026-07-07 06:00입니다.",
+    "current_step": "schedule",
+    "target": {
+      "lecture": 4,
+      "title": "실패의 동역학과 초기 경력의 좌절이 미치는 영향",
+      "scheduled_at": "2026-07-07 06:00",
+      "overdue_minutes": 0,
+      "running": false
+    },
+    "last_completed": {
+      "lecture": 3,
+      "title": "과학의 과학(Science of Science): 데이터, 방법론, 그리고 진화",
+      "completed_at": "2026-07-06 19:53"
+    },
+    "course": "Dashun Wang 연구 흐름 따라잡기",
     "done": 3,
     "total": 11,
-    "current": "L4 2026-07-07 06:00 실패의 동역학과 초기 경력의 좌절이 미치는 영향"
+    "steps": [
+      {
+        "id": "schedule",
+        "label": "예약 확인",
+        "detail": "다음 예약 2026-07-07 06:00",
+        "status": "ready",
+        "current": true
+      },
+      {
+        "id": "start",
+        "label": "프로세스 시작",
+        "detail": "launchd 또는 watchdog이 digest 실행",
+        "status": "ready",
+        "current": false
+      },
+      {
+        "id": "evidence",
+        "label": "논문 근거 수집",
+        "detail": "핵심 논문·연결 그래프 수집",
+        "status": "ready",
+        "current": false
+      },
+      {
+        "id": "report",
+        "label": "리포트·HTML 제작",
+        "detail": "Deeper Research, 그림, 논문 연결 지도",
+        "status": "ready",
+        "current": false
+      },
+      {
+        "id": "script",
+        "label": "오디오 대본 생성",
+        "detail": "분할 대본 병렬 생성",
+        "status": "ready",
+        "current": false
+      },
+      {
+        "id": "tts",
+        "label": "TTS·MP3 변환",
+        "detail": "Gemini TTS 호출과 MP3 인코딩",
+        "status": "ready",
+        "current": false
+      },
+      {
+        "id": "image",
+        "label": "메일 이미지 첨부",
+        "detail": "커리큘럼 진도 PNG 생성",
+        "status": "ready",
+        "current": false
+      },
+      {
+        "id": "email",
+        "label": "메일 발송",
+        "detail": "HTML과 오디오 파일 전송",
+        "status": "ready",
+        "current": false
+      },
+      {
+        "id": "ledger",
+        "label": "완료 기록·휴식",
+        "detail": "ledger 저장 후 다음 예약까지 대기",
+        "status": "ready",
+        "current": false
+      }
+    ],
+    "log": {
+      "path": "/Users/jehyunlee/pc_agent/dashun_wang/launchd.err",
+      "age_seconds": 51490,
+      "tail": []
+    }
   },
   "processes": {
     "digest": [],
     "watchdog": []
   },
   "events": [
-    {
-      "time": "init",
-      "message": "Dashboard repository initialized."
-    },
     {
       "time": "2026-07-06T10:20:15.470902Z",
       "message": "heartbeat overall=warn, digest=running, done=2/11"
@@ -107,6 +188,10 @@
     {
       "time": "2026-07-06T11:14:10.770250Z",
       "message": "heartbeat overall=ok, digest=idle, done=3/11"
+    },
+    {
+      "time": "2026-07-06T11:18:12.010226Z",
+      "message": "workflow=idle, current=schedule, target=L4"
     }
   ],
   "ssh_history": [
@@ -144,6 +229,10 @@
     },
     {
       "time": "2026-07-06T11:14:10.770250Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-06T11:18:12.010226Z",
       "status": "pass"
     }
   ]

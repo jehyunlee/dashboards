@@ -51,6 +51,8 @@ PLIST
   -application-extension \
   -framework SwiftUI \
   -framework WidgetKit \
+  -Xlinker -e \
+  -Xlinker _NSExtensionMain \
   "${SRC}/TokenStatusWidget.swift" \
   -o "${EXT}/Contents/MacOS/${EXT_NAME}"
 

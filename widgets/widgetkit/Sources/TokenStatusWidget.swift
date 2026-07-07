@@ -199,15 +199,15 @@ struct TokenStatusWidgetView: View {
         let snapshot = entry.snapshot
         let providers = orderedProviders(snapshot?.providers ?? TokenSnapshot.placeholder.providers)
         let status = effectiveStatus(snapshot)
-        let tickCount = family == .systemLarge ? 30 : 18
+        let tickCount = tickCount(for: family)
 
         VStack(alignment: .leading, spacing: family == .systemSmall ? 8 : 10) {
             header(snapshot: snapshot, status: status)
 
             if family == .systemSmall {
-                SmallMatrix(providers: providers, history: entry.history, tickCount: 10)
+                SmallMatrix(providers: providers, history: entry.history, tickCount: tickCount)
             } else {
-                MatrixDashboard(providers: providers, history: entry.history, tickCount: tickCount, showColumnHeaders: family == .systemLarge)
+                MatrixDashboard(providers: providers, history: entry.history, tickCount: tickCount, family: family)
             }
 
             if let error = entry.error {
@@ -273,46 +273,143 @@ struct MatrixDashboard: View {
     let providers: [ProviderStatus]
     let history: TokenHistory
     let tickCount: Int
-    let showColumnHeaders: Bool
+    let family: WidgetFamily
 
-    private let providerWidth: CGFloat = 66
+    private var visibleProviders: [ProviderStatus] { Array(providers.prefix(3)) }
+    private var labelWidth: CGFloat { family == .systemMedium ? 72 : 88 }
+    private var cellSpacing: CGFloat { family == .systemExtraLarge ? 8 : 6 }
+    private var rowSpacing: CGFloat { family == .systemExtraLarge ? 9 : 7 }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 7) {
-            if showColumnHeaders {
-                HStack(spacing: 6) {
-                    Text("MODEL")
-                        .frame(width: providerWidth, alignment: .leading)
-                    MatrixHeader("API 접속")
-                    MatrixHeader("구독 토큰")
-                    MatrixHeader("API 토큰")
+        VStack(alignment: .leading, spacing: rowSpacing) {
+            HStack(alignment: .bottom, spacing: cellSpacing) {
+                Text("MONITOR")
+                    .font(.caption2.weight(.black))
+                    .foregroundStyle(.secondary)
+                    .frame(width: labelWidth, alignment: .leading)
+
+                ForEach(visibleProviders) { provider in
+                    ProviderColumnHeader(provider: provider)
                 }
-                .font(.caption2.weight(.black))
+            }
+
+            MatrixMetricRow(
+                title: "API 접속",
+                subtitle: "5분 연결",
+                providers: visibleProviders,
+                labelWidth: labelWidth,
+                cellSpacing: cellSpacing
+            ) { provider in
+                ConnectionCell(provider: provider, history: history, tickCount: tickCount)
+            }
+
+            MatrixMetricRow(
+                title: "구독 토큰",
+                subtitle: "6h 누적",
+                providers: visibleProviders,
+                labelWidth: labelWidth,
+                cellSpacing: cellSpacing
+            ) { provider in
+                UsageCell(
+                    value: subscriptionValue(provider),
+                    detail: provider.id == "gemini" ? "—" : "6h",
+                    points: usageValues(provider.subscriptionSeries, count: tickCount),
+                    tint: providerTint(for: provider.id),
+                    emptyText: provider.id == "gemini" ? "구독 없음" : "0"
+                )
+            }
+
+            MatrixMetricRow(
+                title: "API 토큰",
+                subtitle: "6h 누적",
+                providers: visibleProviders,
+                labelWidth: labelWidth,
+                cellSpacing: cellSpacing
+            ) { provider in
+                UsageCell(
+                    value: usageValue(provider.usageSeries),
+                    detail: "6h",
+                    points: usageValues(provider.usageSeries, count: tickCount),
+                    tint: providerTint(for: provider.id),
+                    emptyText: "0"
+                )
+            }
+        }
+    }
+}
+
+struct ProviderColumnHeader: View {
+    let provider: ProviderStatus
+
+    var body: some View {
+        HStack(spacing: 5) {
+            Circle()
+                .fill(color(for: provider.status ?? "unknown"))
+                .frame(width: 7, height: 7)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(displayName(provider))
+                    .font(.caption.weight(.black))
+                    .lineLimit(1)
+                Text(statusText(provider.status))
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(color(for: provider.status ?? "unknown"))
+                    .lineLimit(1)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 6)
+    }
+}
+
+struct MatrixMetricRow<Cell: View>: View {
+    let title: String
+    let subtitle: String
+    let providers: [ProviderStatus]
+    let labelWidth: CGFloat
+    let cellSpacing: CGFloat
+    let content: (ProviderStatus) -> Cell
+
+    init(
+        title: String,
+        subtitle: String,
+        providers: [ProviderStatus],
+        labelWidth: CGFloat,
+        cellSpacing: CGFloat,
+        @ViewBuilder content: @escaping (ProviderStatus) -> Cell
+    ) {
+        self.title = title
+        self.subtitle = subtitle
+        self.providers = providers
+        self.labelWidth = labelWidth
+        self.cellSpacing = cellSpacing
+        self.content = content
+    }
+
+    var body: some View {
+        HStack(alignment: .center, spacing: cellSpacing) {
+            MetricLabel(title: title, subtitle: subtitle)
+                .frame(width: labelWidth, alignment: .leading)
+
+            ForEach(providers) { provider in
+                content(provider)
+            }
+        }
+    }
+}
+
+struct MetricLabel: View {
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.caption.weight(.black))
+                .lineLimit(1)
+            Text(subtitle)
+                .font(.caption2.weight(.semibold))
                 .foregroundStyle(.secondary)
-            }
-
-            ForEach(providers.prefix(3)) { provider in
-                HStack(alignment: .center, spacing: 6) {
-                    ProviderPill(provider: provider)
-                        .frame(width: providerWidth, alignment: .leading)
-
-                    ConnectionCell(provider: provider, history: history, tickCount: tickCount)
-                    UsageCell(
-                        value: subscriptionValue(provider),
-                        detail: provider.id == "gemini" ? "—" : "6h",
-                        points: usageValues(provider.subscriptionSeries, count: tickCount),
-                        tint: providerTint(for: provider.id),
-                        emptyText: provider.id == "gemini" ? "구독 없음" : "0"
-                    )
-                    UsageCell(
-                        value: usageValue(provider.usageSeries),
-                        detail: "6h",
-                        points: usageValues(provider.usageSeries, count: tickCount),
-                        tint: providerTint(for: provider.id),
-                        emptyText: "0"
-                    )
-                }
-            }
+                .lineLimit(1)
         }
     }
 }
@@ -322,59 +419,72 @@ struct SmallMatrix: View {
     let history: TokenHistory
     let tickCount: Int
 
+    private var visibleProviders: [ProviderStatus] { Array(providers.prefix(3)) }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            ForEach(providers.prefix(3)) { provider in
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 6) {
-                        Circle().fill(color(for: provider.status ?? "unknown")).frame(width: 7, height: 7)
-                        Text(displayName(provider)).font(.caption.weight(.bold)).lineLimit(1)
-                        Spacer(minLength: 4)
-                        Text("S \(subscriptionValue(provider)) · API \(usageValue(provider.usageSeries))")
-                            .font(.caption2.monospacedDigit())
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                    HStack(spacing: 4) {
-                        ConnectionTicksView(ticks: connectionTicks(providerID: provider.id, history: history, count: tickCount), tint: color(for: provider.status ?? "unknown"))
-                        UsageBars(values: usageValues(provider.subscriptionSeries, count: tickCount), tint: providerTint(for: provider.id), emptyText: nil)
-                        UsageBars(values: usageValues(provider.usageSeries, count: tickCount), tint: providerTint(for: provider.id), emptyText: nil)
-                    }
-                    .frame(height: 12)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 4) {
+                Text("TYPE")
+                    .frame(width: 34, alignment: .leading)
+
+                ForEach(visibleProviders) { provider in
+                    Text(shortName(provider))
+                        .frame(maxWidth: .infinity, alignment: .center)
                 }
+            }
+            .font(.caption2.weight(.black))
+            .foregroundStyle(.secondary)
+
+            MiniMetricRow(title: "API", providers: visibleProviders) { provider in
+                Text(connectionSummary(connectionTicks(providerID: provider.id, history: history, count: tickCount)))
+                    .foregroundStyle(color(for: provider.status ?? "unknown"))
+            }
+
+            MiniMetricRow(title: "SUB", providers: visibleProviders) { provider in
+                Text(subscriptionValue(provider))
+                    .foregroundStyle(provider.id == "gemini" ? Color.secondary : providerTint(for: provider.id))
+            }
+
+            MiniMetricRow(title: "TOK", providers: visibleProviders) { provider in
+                Text(usageValue(provider.usageSeries))
+                    .foregroundStyle(providerTint(for: provider.id))
             }
         }
     }
 }
 
-struct MatrixHeader: View {
+struct MiniMetricRow<Cell: View>: View {
     let title: String
+    let providers: [ProviderStatus]
+    let content: (ProviderStatus) -> Cell
 
-    init(_ title: String) {
+    init(title: String, providers: [ProviderStatus], @ViewBuilder content: @escaping (ProviderStatus) -> Cell) {
         self.title = title
+        self.providers = providers
+        self.content = content
     }
 
     var body: some View {
-        Text(title)
-            .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
+        HStack(spacing: 4) {
+            Text(title)
+                .font(.caption2.weight(.black))
+                .foregroundStyle(.secondary)
+                .frame(width: 34, alignment: .leading)
 
-struct ProviderPill: View {
-    let provider: ProviderStatus
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text(displayName(provider))
-                .font(.caption.weight(.black))
-                .lineLimit(1)
-            Text(statusText(provider.status))
-                .font(.caption2.weight(.bold))
-                .foregroundStyle(color(for: provider.status ?? "unknown"))
-                .lineLimit(1)
+            ForEach(providers) { provider in
+                content(provider)
+                    .font(.caption2.monospacedDigit().weight(.bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .frame(maxWidth: .infinity, alignment: .center)
+            }
         }
+        .padding(.vertical, 3)
+        .padding(.horizontal, 5)
+        .background(.white.opacity(0.38), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }
+
 
 struct ConnectionCell: View {
     let provider: ProviderStatus
@@ -492,7 +602,7 @@ struct TokenStatusWidget: Widget {
         }
         .configurationDisplayName("Token Status")
         .description("OpenAI, Anthropic, Google의 API 접속·구독 토큰·API 토큰 흐름을 봅니다.")
-        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge])
     }
 }
 
@@ -535,11 +645,32 @@ private extension TokenHistory {
 private func orderedProviders(_ providers: [ProviderStatus]) -> [ProviderStatus] {
     providerOrder.compactMap { id in providers.first { $0.id == id } }
 }
+private func tickCount(for family: WidgetFamily) -> Int {
+    switch family {
+    case .systemExtraLarge:
+        return 48
+    case .systemLarge:
+        return 30
+    case .systemMedium:
+        return 18
+    default:
+        return 10
+    }
+}
+
 
 private func displayName(_ provider: ProviderStatus) -> String {
     switch provider.id {
     case "gemini": return "Google"
     default: return provider.label ?? provider.id.capitalized
+    }
+}
+private func shortName(_ provider: ProviderStatus) -> String {
+    switch provider.id {
+    case "openai": return "OA"
+    case "anthropic": return "AN"
+    case "gemini": return "GO"
+    default: return String(displayName(provider).prefix(2)).uppercased()
     }
 }
 

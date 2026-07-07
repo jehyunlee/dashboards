@@ -87,6 +87,10 @@ cd dashboards
 
 위젯 크기와 문제 해결은 [docs/widgets.md](docs/widgets.md)에 정리했습니다.
 
+## Gajae Code 사용량
+
+[Gajae Code](https://github.com/Yeachan-Heo/gajae-code)(`gjc`)는 구조화된 코딩 에이전트 실행 환경이며, OAuth/구독 기반 사용량이 provider Admin API에 보이지 않을 수 있어 세션 로그를 별도로 집계합니다.
+
 ## 데이터 흐름
 
 ```text

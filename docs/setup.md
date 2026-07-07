@@ -17,7 +17,7 @@
 - `data` 브랜치 체크아웃: 공개 JSON 데이터 게시용
 - OpenAI, Anthropic, Google API key
 - OpenAI/Anthropic 사용량까지 보려면 provider admin key
-- 선택: GJC/Codex/Claude Code/Gemini CLI 사용량을 받는 로컬 usage receiver
+- 선택: [Gajae Code](https://github.com/Yeachan-Heo/gajae-code)(`gjc`)/Codex/Claude Code/Gemini CLI 사용량을 받는 로컬 usage receiver
 
 ### macOS 위젯을 설치할 클라이언트
 
@@ -107,12 +107,14 @@ python3 $HOME/pc_agent/dashboards/tools/token_status.py
 - `PC_OTEL_USAGE` 또는 `~/pc_agent/otel/usage_local.json`
 - `PC_OTEL_USAGE_API` 또는 `~/pc_agent/otel/usage_api_local.json`
 
-GJC 세션 사용량은 `tools/gjc_usage_reporter.py`가 로컬 receiver로 전송합니다.
+[Gajae Code](https://github.com/Yeachan-Heo/gajae-code)(`gjc`) 세션 사용량은 `tools/gjc_usage_reporter.py`가 로컬 receiver로 전송합니다.
 
 ```bash
 PC_GJC_USAGE_ENDPOINT=http://localhost:4318/gjc/usage \
 python3 tools/gjc_usage_reporter.py
 ```
+
+Gajae Code는 OAuth/구독 기반 사용량이 provider Admin API에 보이지 않을 수 있어 세션 로그를 별도로 집계합니다.
 
 실제 receiver와 LaunchAgent 구성은 개인 운영 환경에 속합니다. 핵심은 5분 bin 단위 JSON이 위 경로에 생성되어야 토큰 대시보드가 subscription/API 사용량 그래프를 채울 수 있다는 점입니다.
 

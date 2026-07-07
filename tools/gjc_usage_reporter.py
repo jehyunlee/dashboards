@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Report GJC (gajae-code) subscription token usage to the local OTLP receiver.
+"""Report Gajae Code (gjc, https://github.com/Yeachan-Heo/gajae-code) subscription token usage to the local OTLP receiver.
 
-GJC persists every assistant message to session JSONL at
+Gajae Code persists every assistant message to session JSONL at
   ~/.gjc/agent/sessions/--<cwd>--/<ts>_<id>.jsonl
 Each `message` entry carries {provider, model, usage{input,output,cacheRead,cacheWrite}}.
-Account/OAuth-logged GJC usage is subscription-billed but invisible to both the
+Account/OAuth-logged Gajae Code usage is subscription-billed but invisible to both the
 Claude Code OTel path and the org Admin API, so the dashboard's 구독 row misses it.
 
 This reporter scans the session files, aggregates NEW assistant-message usage into

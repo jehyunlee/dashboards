@@ -593,6 +593,194 @@ struct UsageBars: View {
     }
 }
 
+
+struct ProviderTokenWidgetView: View {
+    @Environment(\.widgetFamily) private var family
+    let entry: TokenEntry
+    let providerID: String
+
+    private var compact: Bool { family == .systemSmall }
+
+    var body: some View {
+        let snapshot = entry.snapshot
+        let provider = providerStatus(providerID, snapshot: snapshot)
+        let ticks = connectionTicks(providerID: provider.id, history: entry.history, count: providerTickCount(for: family))
+        let tint = providerTint(for: provider.id)
+        let subscriptionTint = provider.id == "gemini" ? Color.secondary : tint
+
+        VStack(alignment: .leading, spacing: compact ? 6 : 8) {
+            providerHeader(provider: provider, snapshot: snapshot)
+
+            ProviderMetricRow(
+                title: "API 현황",
+                value: connectionSummary(ticks),
+                detail: statusText(provider.status),
+                tint: color(for: provider.status ?? "unknown"),
+                compact: compact
+            ) {
+                ConnectionTicksView(ticks: ticks, tint: color(for: provider.status ?? "unknown"))
+            }
+
+            ProviderMetricRow(
+                title: "구독토큰사용",
+                value: subscriptionValue(provider),
+                detail: provider.id == "gemini" ? "구독 없음" : "6h 누적",
+                tint: subscriptionTint,
+                compact: compact
+            ) {
+                UsageBars(
+                    values: usageValues(provider.subscriptionSeries, count: providerTickCount(for: family)),
+                    tint: subscriptionTint,
+                    emptyText: provider.id == "gemini" ? "구독 없음" : "0"
+                )
+            }
+
+            ProviderMetricRow(
+                title: "API토큰사용",
+                value: usageValue(provider.usageSeries),
+                detail: "6h 누적",
+                tint: tint,
+                compact: compact
+            ) {
+                UsageBars(
+                    values: usageValues(provider.usageSeries, count: providerTickCount(for: family)),
+                    tint: tint,
+                    emptyText: "0"
+                )
+            }
+
+            if !compact, let error = entry.error {
+                Text("last fetch error: \(error)")
+                    .font(.caption2)
+                    .foregroundStyle(.orange)
+                    .lineLimit(1)
+            }
+        }
+        .containerBackground(.regularMaterial, for: .widget)
+        .widgetURL(dashboardURL)
+    }
+
+    private func providerHeader(provider: ProviderStatus, snapshot: TokenSnapshot?) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("TOKEN STATUS")
+                    .font(.caption2.weight(.black))
+                    .foregroundStyle(.secondary)
+                Text(displayName(provider))
+                    .font(compact ? .headline.weight(.black) : .title3.weight(.black))
+                    .lineLimit(1)
+                Text("5분 단위 · \(ageText(snapshot?.updatedAt))")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 4)
+            VStack(alignment: .trailing, spacing: 4) {
+                Circle()
+                    .fill(color(for: provider.status ?? "unknown"))
+                    .frame(width: compact ? 10 : 12, height: compact ? 10 : 12)
+                    .shadow(color: color(for: provider.status ?? "unknown").opacity(0.35), radius: 6)
+                Text(statusText(provider.status).uppercased())
+                    .font(.caption2.weight(.bold))
+                    .foregroundStyle(color(for: provider.status ?? "unknown"))
+                    .lineLimit(1)
+            }
+        }
+    }
+}
+
+struct ProviderMetricRow<Signal: View>: View {
+    let title: String
+    let value: String
+    let detail: String
+    let tint: Color
+    let compact: Bool
+    let signal: Signal
+
+    init(
+        title: String,
+        value: String,
+        detail: String,
+        tint: Color,
+        compact: Bool,
+        @ViewBuilder signal: () -> Signal
+    ) {
+        self.title = title
+        self.value = value
+        self.detail = detail
+        self.tint = tint
+        self.compact = compact
+        self.signal = signal()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: compact ? 2 : 3) {
+            HStack(alignment: .firstTextBaseline, spacing: 5) {
+                Text(title)
+                    .font(.caption2.weight(.black))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                Spacer(minLength: 2)
+                Text(value)
+                    .font((compact ? Font.caption2 : Font.caption).monospacedDigit().weight(.bold))
+                    .foregroundStyle(tint)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.65)
+                Text(detail)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
+            }
+
+            signal
+                .frame(height: compact ? 12 : 16)
+        }
+        .padding(.vertical, compact ? 4 : 6)
+        .padding(.horizontal, compact ? 6 : 8)
+        .background(.white.opacity(0.44), in: RoundedRectangle(cornerRadius: compact ? 9 : 11, style: .continuous))
+    }
+}
+
+struct OpenAITokenWidget: Widget {
+    let kind = "dev.jehyunlee.dashboards.token-status.openai"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: TokenProvider()) { entry in
+            ProviderTokenWidgetView(entry: entry, providerID: "openai")
+        }
+        .configurationDisplayName("OpenAI Token Status")
+        .description("OpenAI의 API 현황, 구독토큰사용, API토큰사용을 3줄로 봅니다.")
+        .supportedFamilies([.systemSmall, .systemMedium])
+    }
+}
+
+struct AnthropicTokenWidget: Widget {
+    let kind = "dev.jehyunlee.dashboards.token-status.anthropic"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: TokenProvider()) { entry in
+            ProviderTokenWidgetView(entry: entry, providerID: "anthropic")
+        }
+        .configurationDisplayName("Anthropic Token Status")
+        .description("Anthropic의 API 현황, 구독토큰사용, API토큰사용을 3줄로 봅니다.")
+        .supportedFamilies([.systemSmall, .systemMedium])
+    }
+}
+
+struct GoogleTokenWidget: Widget {
+    let kind = "dev.jehyunlee.dashboards.token-status.google"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: TokenProvider()) { entry in
+            ProviderTokenWidgetView(entry: entry, providerID: "gemini")
+        }
+        .configurationDisplayName("Google Token Status")
+        .description("Google의 API 현황, 구독토큰사용, API토큰사용을 3줄로 봅니다.")
+        .supportedFamilies([.systemSmall, .systemMedium])
+    }
+}
+
 struct TokenStatusWidget: Widget {
     let kind = "dev.jehyunlee.dashboards.token-status"
 
@@ -600,7 +788,7 @@ struct TokenStatusWidget: Widget {
         StaticConfiguration(kind: kind, provider: TokenProvider()) { entry in
             TokenStatusWidgetView(entry: entry)
         }
-        .configurationDisplayName("Token Status")
+        .configurationDisplayName("Token Matrix")
         .description("OpenAI, Anthropic, Google의 API 접속·구독 토큰·API 토큰 흐름을 봅니다.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge])
     }
@@ -610,6 +798,9 @@ struct TokenStatusWidget: Widget {
 struct JehyunDashboardWidgetBundle: WidgetBundle {
     var body: some Widget {
         TokenStatusWidget()
+        OpenAITokenWidget()
+        AnthropicTokenWidget()
+        GoogleTokenWidget()
     }
 }
 
@@ -645,6 +836,14 @@ private extension TokenHistory {
 private func orderedProviders(_ providers: [ProviderStatus]) -> [ProviderStatus] {
     providerOrder.compactMap { id in providers.first { $0.id == id } }
 }
+private func providerStatus(_ providerID: String, snapshot: TokenSnapshot?) -> ProviderStatus {
+    let providers = orderedProviders(snapshot?.providers ?? TokenSnapshot.placeholder.providers)
+    if let provider = providers.first(where: { $0.id == providerID }) {
+        return provider
+    }
+    return TokenSnapshot.placeholder.providers.first { $0.id == providerID } ?? TokenSnapshot.placeholder.providers[0]
+}
+
 private func tickCount(for family: WidgetFamily) -> Int {
     switch family {
     case .systemExtraLarge:
@@ -657,6 +856,15 @@ private func tickCount(for family: WidgetFamily) -> Int {
         return 10
     }
 }
+private func providerTickCount(for family: WidgetFamily) -> Int {
+    switch family {
+    case .systemMedium, .systemLarge, .systemExtraLarge:
+        return 36
+    default:
+        return 18
+    }
+}
+
 
 
 private func displayName(_ provider: ProviderStatus) -> String {

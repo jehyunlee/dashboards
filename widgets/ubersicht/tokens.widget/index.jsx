@@ -1,6 +1,11 @@
 const DATA_URL = 'https://raw.githubusercontent.com/jehyunlee/dashboards/data/data/tokens.json';
 const VISIBLE = 24;
 const STALE_MS = 30 * 60 * 1000;
+const WIDGET_ANCHOR_X = 'right';
+const WIDGET_ANCHOR_Y = 'bottom';
+const WIDGET_EDGE_X = 28;
+const WIDGET_EDGE_Y = 34;
+const WIDGET_WIDTH = 420;
 
 export const refreshFrequency = 60 * 1000;
 export const initialState = { data: null, error: null, fetchedAt: null };
@@ -22,9 +27,9 @@ export const updateState = (event, previousState = initialState) => {
 };
 
 export const className = `
-  right: 28px;
-  bottom: 34px;
-  width: 420px;
+  ${WIDGET_ANCHOR_X}: ${WIDGET_EDGE_X}px;
+  ${WIDGET_ANCHOR_Y}: ${WIDGET_EDGE_Y}px;
+  width: ${WIDGET_WIDTH}px;
   color: #111827;
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Noto Sans KR", Segoe UI, sans-serif;
   pointer-events: none;

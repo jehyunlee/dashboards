@@ -1,33 +1,33 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-07T19:55:07.162330Z",
-  "overall": "ok",
-  "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제6강 2026-07-08 05:00입니다.",
+  "updated_at": "2026-07-07T20:00:12.592657Z",
+  "overall": "warn",
+  "summary": "제6강 제작·발송 프로세스가 진행 중입니다.",
   "checks": {
     "ssh": {
       "status": "ok",
       "detail": "Local SSH daemon check only: 127.0.0.1:22 is listening on the Mac mini."
     },
     "digest": {
-      "status": "ok",
-      "detail": "No lecture digest currently running."
+      "status": "warn",
+      "detail": "17065       00:11   0:00.80   0.0 S    /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --due"
     },
     "watchdog": {
-      "status": "ok",
-      "detail": "Watchdog launchd installed; interval job may be idle between checks."
+      "status": "warn",
+      "detail": "Digest is running but watchdog process is not visible between interval checks."
     }
   },
   "workflow": {
-    "status": "ok",
-    "mode": "idle",
-    "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제6강 2026-07-08 05:00입니다.",
-    "current_step": "schedule",
+    "status": "warn",
+    "mode": "running",
+    "summary": "제6강 제작·발송 프로세스가 진행 중입니다.",
+    "current_step": "ledger",
     "target": {
       "lecture": 6,
       "title": "팀 규모, 협업 구조, 그리고 파괴적 혁신",
       "scheduled_at": "2026-07-08 05:00",
       "overdue_minutes": 0,
-      "running": false
+      "running": true
     },
     "last_completed": {
       "lecture": 5,
@@ -39,91 +39,89 @@
       {
         "id": "schedule",
         "label": "예약 확인",
-        "detail": "다음 예약 2026-07-08 05:00",
-        "status": "ready",
-        "current": true
+        "detail": "하루 2회 launchd 예약 시각 확인",
+        "status": "done",
+        "current": false
       },
       {
         "id": "start",
         "label": "프로세스 시작",
         "detail": "launchd 또는 watchdog이 digest 실행",
-        "status": "ready",
+        "status": "done",
         "current": false
       },
       {
         "id": "evidence",
         "label": "논문 근거 수집",
         "detail": "핵심 논문·연결 그래프 수집",
-        "status": "ready",
+        "status": "done",
         "current": false
       },
       {
         "id": "report",
         "label": "리포트·HTML 제작",
         "detail": "Deeper Research, 그림, 논문 연결 지도",
-        "status": "ready",
+        "status": "done",
         "current": false
       },
       {
         "id": "script",
         "label": "오디오 대본 생성",
         "detail": "분할 대본 병렬 생성",
-        "status": "ready",
+        "status": "done",
         "current": false
       },
       {
         "id": "tts",
         "label": "TTS·MP3 변환",
         "detail": "Gemini TTS 호출과 MP3 인코딩",
-        "status": "ready",
+        "status": "done",
         "current": false
       },
       {
         "id": "image",
         "label": "메일 이미지 첨부",
         "detail": "커리큘럼 진도 PNG 생성",
-        "status": "ready",
+        "status": "done",
         "current": false
       },
       {
         "id": "email",
         "label": "메일 발송",
         "detail": "HTML과 오디오 파일 전송",
-        "status": "ready",
+        "status": "done",
         "current": false
       },
       {
         "id": "ledger",
         "label": "완료 기록·휴식",
-        "detail": "ledger 저장 후 다음 예약까지 대기",
-        "status": "ready",
-        "current": false
+        "detail": "완료 기록 저장됨",
+        "status": "done",
+        "current": true
       }
     ],
     "log": {
       "path": "/Users/jehyunlee/pc_agent/dashun_wang/launchd.out",
-      "age_seconds": 49493,
+      "age_seconds": 9,
       "tail": [
-        "      [9/11]",
-        "      [10/11]",
-        "      [11/11]",
-        "     17.4MB · ~38분 (첨부)",
         "     진도 이미지 생성 (203KB)",
         "  4) 이메일 발송",
         "     이메일 성공 (status 200) {\"id\":\"5485b28b-9a4a-4878-96db-c09c0647e871\"}  → ['jehyun.lee@gmail.com', 'jehyunlee@kist.re.kr', 'wjkimrocks@kist.re.kr', 'wjkimrocks@gmail.com', 'yoonjuho@kist.re.kr', 'yoonjuho@hanyang.ac.kr', 'kimth@kist.re.kr', 'skong@kist.re.kr', 'kyulikim@kist.re.kr', 'gold@kist.re.kr', 'wyl4493@kist.re.kr', 'SJ1@kist.re.kr', 'syson@kist.re.kr', 'hyejae@kist.re.kr', 'minivy@gmail.com', 'zest.woosung@gmail.com', 'jywon337@gmail.com']",
-        "[agent] 제5강 done 기록."
+        "[agent] 제5강 done 기록.",
+        "[agent] 제6강/11 · 팀 규모, 협업 구조, 그리고 파괴적 혁신 · 핵심 6편",
+        "  1) 근거 수집 (핵심 + 연결 그래프)",
+        "     근거 38,256자 · 관련논문 10편",
+        "  2) Deeper Research 리포트 합성 (웹 검색 포함)"
       ]
     }
   },
   "processes": {
-    "digest": [],
+    "digest": [
+      "17065       00:11   0:00.80   0.0 S    /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --due"
+    ],
     "watchdog": []
   },
   "events": [
-    {
-      "time": "2026-07-07T19:04:13.356781Z",
-      "message": "workflow=idle, current=schedule, target=L6"
-    },
     {
       "time": "2026-07-07T19:09:18.920227Z",
       "message": "workflow=idle, current=schedule, target=L6"
@@ -163,13 +161,13 @@
     {
       "time": "2026-07-07T19:55:07.162330Z",
       "message": "workflow=idle, current=schedule, target=L6"
+    },
+    {
+      "time": "2026-07-07T20:00:12.592657Z",
+      "message": "workflow=running, current=ledger, target=L6"
     }
   ],
   "ssh_history": [
-    {
-      "time": "2026-07-06T19:33:38.663368Z",
-      "status": "pass"
-    },
     {
       "time": "2026-07-06T19:38:43.986318Z",
       "status": "pass"
@@ -1316,6 +1314,10 @@
     },
     {
       "time": "2026-07-07T19:55:07.162330Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-07T20:00:12.592657Z",
       "status": "pass"
     }
   ]

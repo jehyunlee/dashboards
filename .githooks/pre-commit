@@ -3,7 +3,7 @@ set -euo pipefail
 
 allowed_host="${DASHBOARD_AUTHOR_HOST:-jehyun-macmini2026}"
 short_host="$(hostname -s 2>/dev/null || hostname)"
-full_host="$(hostname 2>/dev/null || printf %s "$short_host")"
+full_host="$(hostname 2>/dev/null || printf "%s" "$short_host")"
 
 case "$short_host" in
   "$allowed_host"|"$allowed_host.local")
@@ -21,7 +21,7 @@ if [ "${DASHBOARD_ALLOW_LOCAL_COMMIT:-0}" = "1" ]; then
   exit 0
 fi
 
-printf %sn "Dashboard source commits are Mac mini-led."
-printf %sn "Author and commit on ${allowed_host}, push, then run tools/install_from_macmini.sh here."
-printf %sn "Emergency override: DASHBOARD_ALLOW_LOCAL_COMMIT=1 git commit ..."
+printf "%s\n" "Dashboard source commits are Mac mini-led."
+printf "%s\n" "Author and commit on ${allowed_host}, push, then run tools/install_from_macmini.sh here."
+printf "%s\n" "Emergency override: DASHBOARD_ALLOW_LOCAL_COMMIT=1 git commit ..."
 exit 1

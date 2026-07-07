@@ -10,18 +10,18 @@ cd "$ROOT"
 
 current_branch="$(git branch --show-current)"
 if [ "$current_branch" != "$BRANCH" ]; then
-  printf %sn "Refusing install from branch ${current_branch}; expected ${BRANCH}."
+  printf "%s\n" "Refusing install from branch ${current_branch}; expected ${BRANCH}."
   exit 1
 fi
 
 if ! git diff --quiet -- .; then
-  printf %sn "Refusing install with local tracked modifications. Dashboard source is authored on Mac mini."
+  printf "%s\n" "Refusing install with local tracked modifications. Dashboard source is authored on Mac mini."
   git status --short
   exit 1
 fi
 
 if ! git diff --cached --quiet -- .; then
-  printf %sn "Refusing install with staged local modifications. Dashboard source is authored on Mac mini."
+  printf "%s\n" "Refusing install with staged local modifications. Dashboard source is authored on Mac mini."
   git status --short
   exit 1
 fi
@@ -38,4 +38,4 @@ if [ "${INSTALL_UBERSICHT_WIDGET:-0}" = "1" ] && [ -x ./widgets/ubersicht/instal
   ./widgets/ubersicht/install-tokens-widget.sh
 fi
 
-printf Installed dashboard widgets from %s/%s at %s.n "$REMOTE" "$BRANCH" "$(git rev-parse --short HEAD)"
+printf "Installed dashboard widgets from %s/%s at %s.\n" "$REMOTE" "$BRANCH" "$(git rev-parse --short HEAD)"

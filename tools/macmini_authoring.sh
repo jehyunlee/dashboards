@@ -9,5 +9,5 @@ if [ "$#" -eq 0 ]; then
 fi
 
 remote_cmd=""
-printf -v remote_cmd %q  "$@"
+printf -v remote_cmd "%q " "$@"
 ssh -o BatchMode=yes -o ConnectTimeout=8 "$MACMINI_HOST" "cd \"$MACMINI_REPO\" && $remote_cmd"

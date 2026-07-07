@@ -797,10 +797,15 @@ struct TokenStatusWidget: Widget {
 @main
 struct JehyunDashboardWidgetBundle: WidgetBundle {
     var body: some Widget {
-        TokenStatusWidget()
+#if PROVIDER_OPENAI
         OpenAITokenWidget()
+#elseif PROVIDER_ANTHROPIC
         AnthropicTokenWidget()
+#elseif PROVIDER_GOOGLE
         GoogleTokenWidget()
+#else
+        TokenStatusWidget()
+#endif
     }
 }
 

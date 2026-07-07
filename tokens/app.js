@@ -2,7 +2,7 @@ const SNAP_SAME = '../data/tokens.json';
 const SNAP_RAW = 'https://raw.githubusercontent.com/jehyunlee/dashboards/data/data/tokens.json';
 const HIST_SAME = '../data/tokens_history.json';
 const HIST_RAW = 'https://raw.githubusercontent.com/jehyunlee/dashboards/data/data/tokens_history.json';
-const VISIBLE = 36; // 36 ticks x 5 min = last 3 hours
+const VISIBLE = 72; // 72 ticks x 5 min = last 6 hours
 const $ = (id) => document.getElementById(id);
 
 function ageMs(iso){ const t = Date.parse(iso || ''); return Number.isFinite(t) ? Date.now() - t : Infinity; }
@@ -116,31 +116,32 @@ function renderProvider(p, samples){
   const subConfigured = !!(p.subscription_series);
   const geminiEol = p.id === 'gemini';
   const subMeta = sub
-    ? `최근 3h ${fmtCompact(sub.total)} tokens${subS.window_cost ? ' · $'+subS.window_cost : ''}`
-    : (geminiEol ? '개인 CLI 티어 종료' : (subConfigured ? '최근 3h 사용 없음' : '텔레메트리 미설정'));
+    ? `최근 6h ${fmtCompact(sub.total)} tokens${subS.window_cost ? ' · $'+subS.window_cost : ''}`
+    : (geminiEol ? '개인 CLI 티어 종료' : (subConfigured ? '최근 6h 사용 없음' : '텔레메트리 미설정'));
   const subChart = sub
     ? sub.html
     : `<p class="nodata">${geminiEol
         ? 'Gemini 개인 CLI 구독 종료 (Google → Antigravity 이전) · 구독 사용량 소스 없음'
-        : (subConfigured ? '최근 3시간 구독 사용 없음 (Claude Code/Codex OTel 대기 중)' : '구독 텔레메트리 미설정 — 이 provider는 CLI 구독 사용량이 없음')}</p>`;
+        : (subConfigured ? '최근 6시간 구독 사용 없음 (Claude Code/Codex OTel 대기 중)' : '구독 텔레메트리 미설정 — 이 provider는 CLI 구독 사용량이 없음')}</p>`;
 
   const apiS = (p.usage_series && p.usage_series.available) ? p.usage_series : null;
   const api = seriesBars(apiS);
   const billing = p.billing || {};
   const u = billing.usage || {};
   const apiMeta = u.available
-    ? `30일 ${fmtCompact(u.total_tokens)}${billing.month_to_date_cost !== undefined ? ' · $'+billing.month_to_date_cost : ''}${api ? ' · 최근 3h '+fmtCompact(api.total) : ''}`
-    : (api ? `최근 3h ${fmtCompact(api.total)} tokens (파이프라인 계측)` : 'API usage 미연결');
+    ? `30일 ${fmtCompact(u.total_tokens)}${billing.month_to_date_cost !== undefined ? ' · $'+billing.month_to_date_cost : ''}${api ? ' · 최근 6h '+fmtCompact(api.total) : ''}`
+    : (api ? `최근 6h ${fmtCompact(api.total)} tokens (파이프라인 계측)` : 'API usage 미연결');
   const apiChart = api
     ? api.html
-    : `<p class="nodata">${apiS ? '최근 3시간 API(종량제) 사용 없음' : 'API usage admin API 미연결'}</p>`;
+    : `<p class="nodata">${apiS ? '최근 6시간 API(종량제) 사용 없음' : 'API usage admin API 미연결'}</p>`;
 
   // Gemini has no usable subscription CLI (Google discontinued the individual
   // gemini CLI tier), so its panel shows only connection + metered API usage.
   const showSub = p.id !== 'gemini';
+  const subLabel = p.id === 'openai' ? 'Codex 구독 토큰 사용량' : p.id === 'anthropic' ? 'Claude Code 구독 토큰 사용량' : '구독 토큰 사용량';
   const subBlock = showSub ? `
     <div class="series">
-      <div class="series-head"><span>구독 토큰 사용량 (Claude Code·Codex) · 5분</span><em>${escapeHtml(subMeta)}</em></div>
+      <div class="series-head"><span>${subLabel} · 5분</span><em>${escapeHtml(subMeta)}</em></div>
       ${subChart}
     </div>` : '';
   return `<article class="card provider provider-${escapeHtml(p.id)}">

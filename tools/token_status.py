@@ -340,7 +340,7 @@ def _empty_bins(now: datetime, span_min: int, bin_min: int) -> dict[str, int]:
     return bins
 
 
-def openai_usage_series(admin_key: str, now: datetime, span_min: int = 180, bin_min: int = 5) -> dict[str, Any]:
+def openai_usage_series(admin_key: str, now: datetime, span_min: int = 360, bin_min: int = 5) -> dict[str, Any]:
     headers = {"Authorization": f"Bearer {admin_key}"}
     start = int((now - timedelta(minutes=span_min)).timestamp())
     bins = _empty_bins(now, span_min, bin_min)
@@ -362,7 +362,7 @@ def openai_usage_series(admin_key: str, now: datetime, span_min: int = 180, bin_
     return {"available": ok, "bin_seconds": bin_min * 60, "span_minutes": span_min, "points": [{"t": k, "tokens": v} for k, v in sorted(bins.items())]}
 
 
-def anthropic_usage_series(admin_key: str, now: datetime, span_min: int = 180, bin_min: int = 5) -> dict[str, Any]:
+def anthropic_usage_series(admin_key: str, now: datetime, span_min: int = 360, bin_min: int = 5) -> dict[str, Any]:
     headers = {"x-api-key": admin_key, "anthropic-version": "2023-06-01"}
     base = {"starting_at": (now - timedelta(minutes=span_min)).strftime("%Y-%m-%dT%H:%M:00Z"), "bucket_width": "1m", "limit": "60"}
     bins = _empty_bins(now, span_min, bin_min)
@@ -400,7 +400,7 @@ def anthropic_usage_series(admin_key: str, now: datetime, span_min: int = 180, b
             url = None
     return {"available": ok, "bin_seconds": bin_min * 60, "span_minutes": span_min, "points": [{"t": k, "tokens": v} for k, v in sorted(bins.items())]}
 
-def _bins_series(path: Path, provider_id: str, now: datetime, source: str, span_min: int = 180, bin_min: int = 5) -> dict[str, Any]:
+def _bins_series(path: Path, provider_id: str, now: datetime, source: str, span_min: int = 360, bin_min: int = 5) -> dict[str, Any]:
     try:
         state = json.loads(path.read_text(encoding="utf-8"))
     except Exception:

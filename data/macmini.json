@@ -1,6 +1,6 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-07T06:04:58.472473Z",
+  "updated_at": "2026-07-07T06:10:03.933928Z",
   "overall": "warn",
   "summary": "제5강 제작·발송 프로세스가 진행 중입니다.",
   "checks": {
@@ -10,7 +10,7 @@
     },
     "digest": {
       "status": "warn",
-      "detail": "63894       04:57   0:01.52   0.0 S    /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --due"
+      "detail": "63894       10:02   0:05.81  99.7 R    /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --due"
     },
     "watchdog": {
       "status": "warn",
@@ -26,7 +26,7 @@
       "lecture": 5,
       "title": "연구자의 경력 궤적, 관심사 진화, 그리고 '핫 스트릭'",
       "scheduled_at": "2026-07-07 15:00",
-      "overdue_minutes": 4,
+      "overdue_minutes": 10,
       "running": true
     },
     "last_completed": {
@@ -102,30 +102,26 @@
     ],
     "log": {
       "path": "/Users/jehyunlee/pc_agent/dashun_wang/launchd.out",
-      "age_seconds": 24,
+      "age_seconds": 2,
       "tail": [
-        "    대본 병렬 생성 4 parts · workers=4",
-        "    대본 3/4 · 4,788자",
-        "    대본 1/4 · 4,242자",
-        "    대본 2/4 · 5,453자",
-        "    대본 4/4 · 5,401자",
-        "    TTS 11 chunks ...",
-        "      [1/11]",
-        "      [2/11]"
+        "      [4/11]",
+        "      [5/11]",
+        "      [6/11]",
+        "      [7/11]",
+        "      [8/11]",
+        "      [9/11]",
+        "      [10/11]",
+        "      [11/11]"
       ]
     }
   },
   "processes": {
     "digest": [
-      "63894       04:57   0:01.52   0.0 S    /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --due"
+      "63894       10:02   0:05.81  99.7 R    /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --due"
     ],
     "watchdog": []
   },
   "events": [
-    {
-      "time": "2026-07-07T05:14:04.949433Z",
-      "message": "workflow=idle, current=schedule, target=L5"
-    },
     {
       "time": "2026-07-07T05:19:10.247361Z",
       "message": "workflow=idle, current=schedule, target=L5"
@@ -164,6 +160,10 @@
     },
     {
       "time": "2026-07-07T06:04:58.472473Z",
+      "message": "workflow=running, current=ledger, target=L5"
+    },
+    {
+      "time": "2026-07-07T06:10:03.933928Z",
       "message": "workflow=running, current=ledger, target=L5"
     }
   ],
@@ -1106,6 +1106,10 @@
     },
     {
       "time": "2026-07-07T06:04:58.472473Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-07T06:10:03.933928Z",
       "status": "pass"
     }
   ]

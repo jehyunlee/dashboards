@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Token Widget</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <main id="widget" class="widget status-unknown">
+    <header>
+      <div>
+        <p class="eyebrow">TOKEN STATUS</p>
+        <h1 id="title">Checking…</h1>
+        <p id="detail">Waiting for token status data.</p>
+      </div>
+      <span id="dot" class="dot" aria-hidden="true"></span>
+    </header>
+    <section id="providers" class="providers" aria-label="provider status"></section>
+    <footer>
+      <span id="updatedAt">—</span>
+      <a href="../" target="_blank" rel="noreferrer">full dashboard</a>
+    </footer>
+  </main>
+  <script src="./app.js?v=20260707-widget1"></script>
+</body>
+</html>

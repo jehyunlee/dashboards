@@ -31,10 +31,11 @@ jobs:
           path: data-src
       - name: Prepare static artifact
         run: |
-          mkdir -p _site/data _site/learn _site/tokens
+          mkdir -p _site/data _site/learn _site/tokens _site/tokens/widget
           cp site-src/index.html _site/
           cp site-src/learn/index.html site-src/learn/app.js site-src/learn/style.css _site/learn/
           cp site-src/tokens/index.html site-src/tokens/app.js site-src/tokens/style.css _site/tokens/
+          cp site-src/tokens/widget/index.html site-src/tokens/widget/app.js site-src/tokens/widget/style.css _site/tokens/widget/
           cp data-src/data/macmini.json data-src/data/tokens.json _site/data/
           cp data-src/data/tokens_history.json _site/data/ 2>/dev/null || true
       - uses: actions/configure-pages@v5

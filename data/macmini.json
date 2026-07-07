@@ -1,6 +1,6 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-07T23:23:50.048699Z",
+  "updated_at": "2026-07-07T23:28:55.518544Z",
   "overall": "warn",
   "summary": "제7강 제작·발송 프로세스가 진행 중입니다.",
   "checks": {
@@ -10,7 +10,7 @@
     },
     "digest": {
       "status": "warn",
-      "detail": "26590       20:56   0:24.63   0.0 SN   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --build --all"
+      "detail": "26590       26:01   0:34.73   0.0 SN   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --build --all"
     },
     "watchdog": {
       "status": "warn",
@@ -102,7 +102,7 @@
     ],
     "log": {
       "path": "/Users/jehyunlee/pc_agent/dashun_wang/launchd.out",
-      "age_seconds": 11712,
+      "age_seconds": 12017,
       "tail": [
         "      [8/10]",
         "      [9/10]",
@@ -117,15 +117,11 @@
   },
   "processes": {
     "digest": [
-      "26590       20:56   0:24.63   0.0 SN   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --build --all"
+      "26590       26:01   0:34.73   0.0 SN   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --build --all"
     ],
     "watchdog": []
   },
   "events": [
-    {
-      "time": "2026-07-07T22:32:55.187247Z",
-      "message": "workflow=idle, current=schedule, target=L7"
-    },
     {
       "time": "2026-07-07T22:38:00.582191Z",
       "message": "workflow=idle, current=schedule, target=L7"
@@ -165,13 +161,13 @@
     {
       "time": "2026-07-07T23:23:50.048699Z",
       "message": "workflow=running, current=ledger, target=L7"
+    },
+    {
+      "time": "2026-07-07T23:28:55.518544Z",
+      "message": "workflow=running, current=ledger, target=L7"
     }
   ],
   "ssh_history": [
-    {
-      "time": "2026-07-06T23:02:14.841538Z",
-      "status": "pass"
-    },
     {
       "time": "2026-07-06T23:07:19.992281Z",
       "status": "pass"
@@ -1318,6 +1314,10 @@
     },
     {
       "time": "2026-07-07T23:23:50.048699Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-07T23:28:55.518544Z",
       "status": "pass"
     }
   ]

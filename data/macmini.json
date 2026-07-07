@@ -1,131 +1,125 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-07T20:05:17.821725Z",
-  "overall": "warn",
-  "summary": "제6강 제작·발송 프로세스가 진행 중입니다.",
+  "updated_at": "2026-07-07T20:10:23.267385Z",
+  "overall": "ok",
+  "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제7강 2026-07-08 15:00입니다.",
   "checks": {
     "ssh": {
       "status": "ok",
       "detail": "Local SSH daemon check only: 127.0.0.1:22 is listening on the Mac mini."
     },
     "digest": {
-      "status": "warn",
-      "detail": "17065       05:16   0:02.88   0.0 S    /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --due"
+      "status": "ok",
+      "detail": "No lecture digest currently running."
     },
     "watchdog": {
-      "status": "warn",
-      "detail": "Digest is running but watchdog process is not visible between interval checks."
+      "status": "ok",
+      "detail": "Watchdog launchd installed; interval job may be idle between checks."
     }
   },
   "workflow": {
-    "status": "warn",
-    "mode": "running",
-    "summary": "제6강 제작·발송 프로세스가 진행 중입니다.",
-    "current_step": "ledger",
+    "status": "ok",
+    "mode": "idle",
+    "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제7강 2026-07-08 15:00입니다.",
+    "current_step": "schedule",
     "target": {
-      "lecture": 6,
-      "title": "팀 규모, 협업 구조, 그리고 파괴적 혁신",
-      "scheduled_at": "2026-07-08 05:00",
-      "overdue_minutes": 5,
-      "running": true
+      "lecture": 7,
+      "title": "창의성, 아이디어의 확산, 그리고 군집 행동",
+      "scheduled_at": "2026-07-08 15:00",
+      "overdue_minutes": 0,
+      "running": false
     },
     "last_completed": {
-      "lecture": 5,
-      "title": "연구자의 경력 궤적, 관심사 진화, 그리고 '핫 스트릭'",
-      "completed_at": "2026-07-07 15:10"
+      "lecture": 6,
+      "title": "팀 규모, 협업 구조, 그리고 파괴적 혁신",
+      "completed_at": "2026-07-08 05:08"
     },
     "course": "Dashun Wang 연구 흐름 따라잡기",
     "steps": [
       {
         "id": "schedule",
         "label": "예약 확인",
-        "detail": "하루 2회 launchd 예약 시각 확인",
-        "status": "done",
-        "current": false
+        "detail": "다음 예약 2026-07-08 15:00",
+        "status": "ready",
+        "current": true
       },
       {
         "id": "start",
         "label": "프로세스 시작",
         "detail": "launchd 또는 watchdog이 digest 실행",
-        "status": "done",
+        "status": "ready",
         "current": false
       },
       {
         "id": "evidence",
         "label": "논문 근거 수집",
         "detail": "핵심 논문·연결 그래프 수집",
-        "status": "done",
+        "status": "ready",
         "current": false
       },
       {
         "id": "report",
         "label": "리포트·HTML 제작",
         "detail": "Deeper Research, 그림, 논문 연결 지도",
-        "status": "done",
+        "status": "ready",
         "current": false
       },
       {
         "id": "script",
         "label": "오디오 대본 생성",
         "detail": "분할 대본 병렬 생성",
-        "status": "done",
+        "status": "ready",
         "current": false
       },
       {
         "id": "tts",
         "label": "TTS·MP3 변환",
         "detail": "Gemini TTS 호출과 MP3 인코딩",
-        "status": "done",
+        "status": "ready",
         "current": false
       },
       {
         "id": "image",
         "label": "메일 이미지 첨부",
         "detail": "커리큘럼 진도 PNG 생성",
-        "status": "done",
+        "status": "ready",
         "current": false
       },
       {
         "id": "email",
         "label": "메일 발송",
         "detail": "HTML과 오디오 파일 전송",
-        "status": "done",
+        "status": "ready",
         "current": false
       },
       {
         "id": "ledger",
         "label": "완료 기록·휴식",
-        "detail": "완료 기록 저장됨",
-        "status": "done",
-        "current": true
+        "detail": "ledger 저장 후 다음 예약까지 대기",
+        "status": "ready",
+        "current": false
       }
     ],
     "log": {
       "path": "/Users/jehyunlee/pc_agent/dashun_wang/launchd.out",
-      "age_seconds": 28,
+      "age_seconds": 105,
       "tail": [
-        "    대본 4/4 · 4,918자",
-        "    대본 3/4 · 5,159자",
-        "    대본 2/4 · 4,508자",
-        "    TTS 10 chunks ...",
-        "      [1/10]",
-        "      [2/10]",
-        "      [3/10]",
-        "      [4/10]"
+        "      [8/10]",
+        "      [9/10]",
+        "      [10/10]",
+        "     15.6MB · ~34분 (첨부)",
+        "     진도 이미지 생성 (203KB)",
+        "  4) 이메일 발송",
+        "     이메일 성공 (status 200) {\"id\":\"8e02fe8c-ce54-43d7-993c-5311dcd5f6bc\"}  → ['jehyun.lee@gmail.com', 'jehyunlee@kist.re.kr', 'wjkimrocks@kist.re.kr', 'wjkimrocks@gmail.com', 'yoonjuho@kist.re.kr', 'yoonjuho@hanyang.ac.kr', 'kimth@kist.re.kr', 'skong@kist.re.kr', 'kyulikim@kist.re.kr', 'gold@kist.re.kr', 'wyl4493@kist.re.kr', 'SJ1@kist.re.kr', 'syson@kist.re.kr', 'hyejae@kist.re.kr', 'minivy@gmail.com', 'zest.woosung@gmail.com', 'jywon337@gmail.com', 'youngsungson@gmail.com', 'dcbaek@gmail.com', 'impos0108@gmail.com', 'jeongwon@pebblous.ai', 'yoyogo@gmail.com']",
+        "[agent] 제6강 done 기록."
       ]
     }
   },
   "processes": {
-    "digest": [
-      "17065       05:16   0:02.88   0.0 S    /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --due"
-    ],
+    "digest": [],
     "watchdog": []
   },
   "events": [
-    {
-      "time": "2026-07-07T19:14:24.595150Z",
-      "message": "workflow=idle, current=schedule, target=L6"
-    },
     {
       "time": "2026-07-07T19:19:30.065435Z",
       "message": "workflow=idle, current=schedule, target=L6"
@@ -165,13 +159,13 @@
     {
       "time": "2026-07-07T20:05:17.821725Z",
       "message": "workflow=running, current=ledger, target=L6"
+    },
+    {
+      "time": "2026-07-07T20:10:23.267385Z",
+      "message": "workflow=idle, current=schedule, target=L7"
     }
   ],
   "ssh_history": [
-    {
-      "time": "2026-07-06T19:43:48.997995Z",
-      "status": "pass"
-    },
     {
       "time": "2026-07-06T19:48:54.155857Z",
       "status": "pass"
@@ -1318,6 +1312,10 @@
     },
     {
       "time": "2026-07-07T20:05:17.821725Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-07T20:10:23.267385Z",
       "status": "pass"
     }
   ]

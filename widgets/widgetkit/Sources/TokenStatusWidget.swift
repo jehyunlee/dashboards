@@ -600,6 +600,7 @@ struct ProviderTokenWidgetView: View {
     let providerID: String
 
     private var compact: Bool { family == .systemSmall }
+    private var spacious: Bool { family == .systemLarge || family == .systemExtraLarge }
 
     var body: some View {
         let snapshot = entry.snapshot
@@ -608,7 +609,7 @@ struct ProviderTokenWidgetView: View {
         let tint = providerTint(for: provider.id)
         let subscriptionTint = provider.id == "gemini" ? Color.secondary : tint
 
-        VStack(alignment: .leading, spacing: compact ? 6 : 8) {
+        VStack(alignment: .leading, spacing: spacious ? 12 : (compact ? 6 : 8)) {
             providerHeader(provider: provider, snapshot: snapshot)
 
             ProviderMetricRow(
@@ -616,7 +617,8 @@ struct ProviderTokenWidgetView: View {
                 value: connectionSummary(ticks),
                 detail: statusText(provider.status),
                 tint: color(for: provider.status ?? "unknown"),
-                compact: compact
+                compact: compact,
+                spacious: spacious
             ) {
                 ConnectionTicksView(ticks: ticks, tint: color(for: provider.status ?? "unknown"))
             }
@@ -626,7 +628,8 @@ struct ProviderTokenWidgetView: View {
                 value: subscriptionValue(provider),
                 detail: provider.id == "gemini" ? "구독 없음" : "6h 누적",
                 tint: subscriptionTint,
-                compact: compact
+                compact: compact,
+                spacious: spacious
             ) {
                 UsageBars(
                     values: usageValues(provider.subscriptionSeries, count: providerTickCount(for: family)),
@@ -640,7 +643,8 @@ struct ProviderTokenWidgetView: View {
                 value: usageValue(provider.usageSeries),
                 detail: "6h 누적",
                 tint: tint,
-                compact: compact
+                compact: compact,
+                spacious: spacious
             ) {
                 UsageBars(
                     values: usageValues(provider.usageSeries, count: providerTickCount(for: family)),
@@ -667,7 +671,7 @@ struct ProviderTokenWidgetView: View {
                     .font(.caption2.weight(.black))
                     .foregroundStyle(.secondary)
                 Text(displayName(provider))
-                    .font(compact ? .headline.weight(.black) : .title3.weight(.black))
+                    .font(compact ? Font.headline.weight(.black) : (spacious ? Font.title.weight(.black) : Font.title3.weight(.black)))
                     .lineLimit(1)
                 Text("5분 단위 · \(ageText(snapshot?.updatedAt))")
                     .font(.caption2)
@@ -678,7 +682,7 @@ struct ProviderTokenWidgetView: View {
             VStack(alignment: .trailing, spacing: 4) {
                 Circle()
                     .fill(color(for: provider.status ?? "unknown"))
-                    .frame(width: compact ? 10 : 12, height: compact ? 10 : 12)
+                    .frame(width: spacious ? 14 : (compact ? 10 : 12), height: spacious ? 14 : (compact ? 10 : 12))
                     .shadow(color: color(for: provider.status ?? "unknown").opacity(0.35), radius: 6)
                 Text(statusText(provider.status).uppercased())
                     .font(.caption2.weight(.bold))
@@ -695,6 +699,7 @@ struct ProviderMetricRow<Signal: View>: View {
     let detail: String
     let tint: Color
     let compact: Bool
+    let spacious: Bool
     let signal: Signal
 
     init(
@@ -703,6 +708,7 @@ struct ProviderMetricRow<Signal: View>: View {
         detail: String,
         tint: Color,
         compact: Bool,
+        spacious: Bool,
         @ViewBuilder signal: () -> Signal
     ) {
         self.title = title
@@ -710,19 +716,20 @@ struct ProviderMetricRow<Signal: View>: View {
         self.detail = detail
         self.tint = tint
         self.compact = compact
+        self.spacious = spacious
         self.signal = signal()
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: compact ? 2 : 3) {
+        VStack(alignment: .leading, spacing: spacious ? 5 : (compact ? 2 : 3)) {
             HStack(alignment: .firstTextBaseline, spacing: 5) {
                 Text(title)
-                    .font(.caption2.weight(.black))
+                    .font((spacious ? Font.caption : Font.caption2).weight(.black))
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                 Spacer(minLength: 2)
                 Text(value)
-                    .font((compact ? Font.caption2 : Font.caption).monospacedDigit().weight(.bold))
+                    .font((compact ? Font.caption2 : (spacious ? Font.title3 : Font.caption)).monospacedDigit().weight(.bold))
                     .foregroundStyle(tint)
                     .lineLimit(1)
                     .minimumScaleFactor(0.65)
@@ -734,11 +741,11 @@ struct ProviderMetricRow<Signal: View>: View {
             }
 
             signal
-                .frame(height: compact ? 12 : 16)
+                .frame(height: spacious ? 34 : (compact ? 12 : 16))
         }
-        .padding(.vertical, compact ? 4 : 6)
-        .padding(.horizontal, compact ? 6 : 8)
-        .background(.white.opacity(0.44), in: RoundedRectangle(cornerRadius: compact ? 9 : 11, style: .continuous))
+        .padding(.vertical, spacious ? 10 : (compact ? 4 : 6))
+        .padding(.horizontal, spacious ? 10 : (compact ? 6 : 8))
+        .background(.white.opacity(0.44), in: RoundedRectangle(cornerRadius: spacious ? 14 : (compact ? 9 : 11), style: .continuous))
     }
 }
 
@@ -751,7 +758,7 @@ struct OpenAITokenWidget: Widget {
         }
         .configurationDisplayName("OpenAI Token Status")
         .description("OpenAI의 API 현황, 구독토큰사용, API토큰사용을 3줄로 봅니다.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
 
@@ -764,7 +771,7 @@ struct AnthropicTokenWidget: Widget {
         }
         .configurationDisplayName("Anthropic Token Status")
         .description("Anthropic의 API 현황, 구독토큰사용, API토큰사용을 3줄로 봅니다.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
 
@@ -777,7 +784,7 @@ struct GoogleTokenWidget: Widget {
         }
         .configurationDisplayName("Google Token Status")
         .description("Google의 API 현황, 구독토큰사용, API토큰사용을 3줄로 봅니다.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
 
@@ -863,7 +870,9 @@ private func tickCount(for family: WidgetFamily) -> Int {
 }
 private func providerTickCount(for family: WidgetFamily) -> Int {
     switch family {
-    case .systemMedium, .systemLarge, .systemExtraLarge:
+    case .systemLarge, .systemExtraLarge:
+        return 60
+    case .systemMedium:
         return 36
     default:
         return 18

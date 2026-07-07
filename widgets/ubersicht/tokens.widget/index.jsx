@@ -71,8 +71,6 @@ export const className = `
   .empty { padding: 14px; color: #94a3b8; font-size: 13px; font-weight: 800; text-align: center; }
 `;
 
-const h = (...args) => React.createElement(...args);
-
 function ageMs(iso) {
   const t = Date.parse(iso || '');
   return Number.isFinite(t) ? Date.now() - t : Infinity;
@@ -112,56 +110,78 @@ function seriesPoints(series) {
 function seriesTotal(series) {
   return seriesPoints(series).reduce((sum, p) => sum + (Number(p.tokens) || 0), 0);
 }
-function spark(series) {
+
+function Spark({ series }) {
   const points = seriesPoints(series);
-  if (!points.length) return h('p', { className: 'note' }, '최근 6시간 사용 표본 없음');
+  if (!points.length) return <p className="note">최근 6시간 사용 표본 없음</p>;
+
   const values = points.map((p) => Number(p.tokens) || 0);
   const max = Math.max(1, ...values);
-  return h('div', { className: 'spark' }, points.map((p, i) => {
-    const v = values[i];
-    const height = v <= 0 ? 2 : Math.max(4, Math.round(v / max * 30));
-    return h('span', { key: `${p.t || i}-${i}`, className: `bar ${v <= 0 ? 'zero' : ''}`, style: { height } });
-  }));
+
+  return (
+    <div className="spark">
+      {points.map((p, i) => {
+        const v = values[i];
+        const height = v <= 0 ? 2 : Math.max(4, Math.round(v / max * 30));
+        return <span key={`${p.t || i}-${i}`} className={`bar ${v <= 0 ? 'zero' : ''}`} style={{ height }} />;
+      })}
+    </div>
+  );
 }
 
-function providerCard(p) {
+function ProviderCard({ provider: p }) {
   const billing = p.billing || {};
   const usage = billing.usage || {};
   const windowTokens = (p.token_window && p.token_window.tokens) || {};
   const hasSub = p.id !== 'gemini' && p.subscription_series;
-  return h('article', { key: p.id, className: `provider provider-${p.id || 'unknown'}` },
-    h('div', { className: 'provider-head' },
-      h('h2', null, p.label || p.id || 'Provider'),
-      h('span', { className: `badge ${cls(p.status)}` }, statusText(p.status))
-    ),
-    h('div', { className: 'row' },
-      h('div', { className: 'metric' }, h('span', null, '30d API'), h('b', null, `${fmtCompact(usage.total_tokens)} tokens`)),
-      h('div', { className: 'metric' }, h('span', null, 'Cost'), h('b', null, fmtMoney(billing.month_to_date_cost)))
-    ),
-    h('div', { className: 'metric' }, h('span', null, 'API 6h'), h('b', null, `${fmtCompact(seriesTotal(p.usage_series))} tokens`)),
-    spark(p.usage_series),
-    hasSub ? h('div', { className: 'metric' }, h('span', null, 'CLI subscription 6h'), h('b', null, `${fmtCompact(seriesTotal(p.subscription_series))} tokens`)) : null,
-    hasSub ? spark(p.subscription_series) : null,
-    windowTokens.remaining ? h('p', { className: 'note' }, `rate window remaining ${fmtCompact(windowTokens.remaining)} / ${fmtCompact(windowTokens.limit)}`) : null
+
+  return (
+    <article className={`provider provider-${p.id || 'unknown'}`}>
+      <div className="provider-head">
+        <h2>{p.label || p.id || 'Provider'}</h2>
+        <span className={`badge ${cls(p.status)}`}>{statusText(p.status)}</span>
+      </div>
+      <div className="row">
+        <div className="metric"><span>30d API</span><b>{fmtCompact(usage.total_tokens)} tokens</b></div>
+        <div className="metric"><span>Cost</span><b>{fmtMoney(billing.month_to_date_cost)}</b></div>
+      </div>
+      <div className="metric"><span>API 6h</span><b>{fmtCompact(seriesTotal(p.usage_series))} tokens</b></div>
+      <Spark series={p.usage_series} />
+      {hasSub ? <div className="metric"><span>CLI subscription 6h</span><b>{fmtCompact(seriesTotal(p.subscription_series))} tokens</b></div> : null}
+      {hasSub ? <Spark series={p.subscription_series} /> : null}
+      {windowTokens.remaining ? <p className="note">rate window remaining {fmtCompact(windowTokens.remaining)} / {fmtCompact(windowTokens.limit)}</p> : null}
+    </article>
   );
 }
 
 export const render = ({ data, error }) => {
   if (!data && error) {
-    return h('div', { className: 'token-widget status-bad' },
-      h('div', { className: 'token-head' },
-        h('div', null, h('p', { className: 'eyebrow' }, 'TOKEN STATUS'), h('h1', null, 'Unavailable'), h('p', { className: 'detail' }, error)),
-        h('span', { className: 'dot' })
-      )
+    return (
+      <div className="token-widget status-bad">
+        <div className="token-head">
+          <div>
+            <p className="eyebrow">TOKEN STATUS</p>
+            <h1>Unavailable</h1>
+            <p className="detail">{error}</p>
+          </div>
+          <span className="dot" />
+        </div>
+      </div>
     );
   }
 
   if (!data) {
-    return h('div', { className: 'token-widget status-warn' },
-      h('div', { className: 'token-head' },
-        h('div', null, h('p', { className: 'eyebrow' }, 'TOKEN STATUS'), h('h1', null, 'Checking…'), h('p', { className: 'detail' }, 'Waiting for token status data.')),
-        h('span', { className: 'dot' })
-      )
+    return (
+      <div className="token-widget status-warn">
+        <div className="token-head">
+          <div>
+            <p className="eyebrow">TOKEN STATUS</p>
+            <h1>Checking…</h1>
+            <p className="detail">Waiting for token status data.</p>
+          </div>
+          <span className="dot" />
+        </div>
+      </div>
     );
   }
 
@@ -172,16 +192,20 @@ export const render = ({ data, error }) => {
   const title = overall === 'ok' ? 'APIs connected' : overall === 'warn' ? 'Token status stale' : 'Provider check failing';
   const updatedAt = data.updated_at ? new Date(data.updated_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'not updated';
 
-  return h('div', { className: `token-widget status-${cls(overall)}` },
-    h('div', { className: 'token-head' },
-      h('div', null,
-        h('p', { className: 'eyebrow' }, 'TOKEN STATUS'),
-        h('h1', null, title),
-        h('p', { className: 'detail' }, `${data.summary || ''} · ${fmtAge(age)}${stale ? ' · stale' : ''}${error ? ` · last fetch error: ${error}` : ''}`)
-      ),
-      h('span', { className: 'dot' })
-    ),
-    h('section', { className: 'providers' }, providers.length ? providers.map(providerCard) : h('div', { className: 'empty' }, 'No providers found.')),
-    h('div', { className: 'footer' }, h('span', null, updatedAt), h('span', null, 'tech.jehyunlee.dev/dashboards/tokens'))
+  return (
+    <div className={`token-widget status-${cls(overall)}`}>
+      <div className="token-head">
+        <div>
+          <p className="eyebrow">TOKEN STATUS</p>
+          <h1>{title}</h1>
+          <p className="detail">{data.summary || ''} · {fmtAge(age)}{stale ? ' · stale' : ''}{error ? ` · last fetch error: ${error}` : ''}</p>
+        </div>
+        <span className="dot" />
+      </div>
+      <section className="providers">
+        {providers.length ? providers.map((p) => <ProviderCard key={p.id} provider={p} />) : <div className="empty">No providers found.</div>}
+      </section>
+      <div className="footer"><span>{updatedAt}</span><span>tech.jehyunlee.dev/dashboards/tokens</span></div>
+    </div>
   );
 };

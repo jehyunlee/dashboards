@@ -1,1 +1,3 @@
 widgets/widgetkit/.build/
+__pycache__/
+*.pyc

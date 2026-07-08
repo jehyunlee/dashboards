@@ -1,6 +1,6 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-08T13:29:17.020635Z",
+  "updated_at": "2026-07-08T13:34:21.992435Z",
   "overall": "ok",
   "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제8강 2026-07-09 05:00입니다.",
   "checks": {
@@ -102,7 +102,7 @@
     ],
     "log": {
       "path": "/Users/jehyunlee/pc_agent/dashun_wang/launchd.out",
-      "age_seconds": 26949,
+      "age_seconds": 27254,
       "tail": [
         "     진도 이미지 생성 (203KB)",
         "  4) 이메일 발송",
@@ -120,10 +120,6 @@
     "watchdog": []
   },
   "events": [
-    {
-      "time": "2026-07-08T12:38:23.836288Z",
-      "message": "workflow=idle, current=schedule, target=L8"
-    },
     {
       "time": "2026-07-08T12:43:29.167350Z",
       "message": "workflow=idle, current=schedule, target=L8"
@@ -163,13 +159,13 @@
     {
       "time": "2026-07-08T13:29:17.020635Z",
       "message": "workflow=idle, current=schedule, target=L8"
+    },
+    {
+      "time": "2026-07-08T13:34:21.992435Z",
+      "message": "workflow=idle, current=schedule, target=L8"
     }
   ],
   "ssh_history": [
-    {
-      "time": "2026-07-07T13:07:33.359347Z",
-      "status": "pass"
-    },
     {
       "time": "2026-07-07T13:12:38.765352Z",
       "status": "pass"
@@ -1316,6 +1312,10 @@
     },
     {
       "time": "2026-07-08T13:29:17.020635Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-08T13:34:21.992435Z",
       "status": "pass"
     }
   ]

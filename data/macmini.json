@@ -1,33 +1,33 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-08T13:49:38.511397Z",
-  "overall": "ok",
-  "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제8강 2026-07-09 05:00입니다.",
+  "updated_at": "2026-07-08T13:54:45.987899Z",
+  "overall": "warn",
+  "summary": "제1강 제작·발송 프로세스가 진행 중입니다.",
   "checks": {
     "ssh": {
       "status": "ok",
       "detail": "Local SSH daemon check only: 127.0.0.1:22 is listening on the Mac mini."
     },
     "digest": {
-      "status": "ok",
-      "detail": "No lecture digest currently running."
+      "status": "warn",
+      "detail": "89562       00:06   0:00.79   0.0 SN   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --deliver --lecture 1 --recipients young@ibs.re.kr"
     },
     "watchdog": {
-      "status": "ok",
-      "detail": "Watchdog launchd installed; interval job may be idle between checks."
+      "status": "warn",
+      "detail": "Digest is running but watchdog process is not visible between interval checks."
     }
   },
   "workflow": {
-    "status": "ok",
-    "mode": "idle",
-    "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제8강 2026-07-09 05:00입니다.",
-    "current_step": "schedule",
+    "status": "warn",
+    "mode": "running",
+    "summary": "제1강 제작·발송 프로세스가 진행 중입니다.",
+    "current_step": "ledger",
     "target": {
-      "lecture": 8,
-      "title": "글로벌 위기 상황에서의 과학과 정책의 공진화",
-      "scheduled_at": "2026-07-09 05:00",
-      "overdue_minutes": 0,
-      "running": false
+      "lecture": 1,
+      "title": "인간 동역학과 네트워크 과학의 기초",
+      "scheduled_at": "2026-07-05 23:00",
+      "overdue_minutes": 4314,
+      "running": true
     },
     "last_completed": {
       "lecture": 7,
@@ -39,70 +39,70 @@
       {
         "id": "schedule",
         "label": "예약 확인",
-        "detail": "다음 예약 2026-07-09 05:00",
-        "status": "ready",
-        "current": true
+        "detail": "하루 2회 launchd 예약 시각 확인",
+        "status": "done",
+        "current": false
       },
       {
         "id": "start",
         "label": "프로세스 시작",
         "detail": "launchd 또는 watchdog이 digest 실행",
-        "status": "ready",
+        "status": "done",
         "current": false
       },
       {
         "id": "evidence",
         "label": "논문 근거 수집",
         "detail": "핵심 논문·연결 그래프 수집",
-        "status": "ready",
+        "status": "done",
         "current": false
       },
       {
         "id": "report",
         "label": "리포트·HTML 제작",
         "detail": "Deeper Research, 그림, 논문 연결 지도",
-        "status": "ready",
+        "status": "done",
         "current": false
       },
       {
         "id": "script",
         "label": "오디오 대본 생성",
         "detail": "분할 대본 병렬 생성",
-        "status": "ready",
+        "status": "done",
         "current": false
       },
       {
         "id": "tts",
         "label": "TTS·MP3 변환",
         "detail": "Gemini TTS 호출과 MP3 인코딩",
-        "status": "ready",
+        "status": "done",
         "current": false
       },
       {
         "id": "image",
         "label": "메일 이미지 첨부",
         "detail": "커리큘럼 진도 PNG 생성",
-        "status": "ready",
+        "status": "done",
         "current": false
       },
       {
         "id": "email",
         "label": "메일 발송",
         "detail": "HTML과 오디오 파일 전송",
-        "status": "ready",
+        "status": "done",
         "current": false
       },
       {
         "id": "ledger",
         "label": "완료 기록·휴식",
-        "detail": "ledger 저장 후 다음 예약까지 대기",
-        "status": "ready",
-        "current": false
+        "detail": "완료 기록 저장됨",
+        "status": "done",
+        "current": true
       }
     ],
     "log": {
       "path": "/Users/jehyunlee/pc_agent/dashun_wang/launchd.out",
-      "age_seconds": 28171,
+      "age_seconds": 28478,
       "tail": [
         "     진도 이미지 생성 (203KB)",
         "  4) 이메일 발송",
@@ -116,14 +116,12 @@
     }
   },
   "processes": {
-    "digest": [],
+    "digest": [
+      "89562       00:06   0:00.79   0.0 SN   /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --deliver --lecture 1 --recipients young@ibs.re.kr"
+    ],
     "watchdog": []
   },
   "events": [
-    {
-      "time": "2026-07-08T12:58:44.280121Z",
-      "message": "workflow=idle, current=schedule, target=L8"
-    },
     {
       "time": "2026-07-08T13:03:49.777422Z",
       "message": "workflow=idle, current=schedule, target=L8"
@@ -163,13 +161,13 @@
     {
       "time": "2026-07-08T13:49:38.511397Z",
       "message": "workflow=idle, current=schedule, target=L8"
+    },
+    {
+      "time": "2026-07-08T13:54:45.987899Z",
+      "message": "workflow=running, current=ledger, target=L1"
     }
   ],
   "ssh_history": [
-    {
-      "time": "2026-07-07T13:27:54.809032Z",
-      "status": "pass"
-    },
     {
       "time": "2026-07-07T13:33:00.091120Z",
       "status": "pass"
@@ -1316,6 +1314,10 @@
     },
     {
       "time": "2026-07-08T13:49:38.511397Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-08T13:54:45.987899Z",
       "status": "pass"
     }
   ]

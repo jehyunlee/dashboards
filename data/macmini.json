@@ -1,8 +1,8 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-08T05:55:46.085004Z",
+  "updated_at": "2026-07-08T06:00:51.409482Z",
   "overall": "ok",
-  "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제7강 2026-07-08 15:00입니다.",
+  "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제8강 2026-07-09 05:00입니다.",
   "checks": {
     "ssh": {
       "status": "ok",
@@ -20,26 +20,26 @@
   "workflow": {
     "status": "ok",
     "mode": "idle",
-    "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제7강 2026-07-08 15:00입니다.",
+    "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제8강 2026-07-09 05:00입니다.",
     "current_step": "schedule",
     "target": {
-      "lecture": 7,
-      "title": "창의성, 아이디어의 확산, 그리고 군집 행동",
-      "scheduled_at": "2026-07-08 15:00",
+      "lecture": 8,
+      "title": "글로벌 위기 상황에서의 과학과 정책의 공진화",
+      "scheduled_at": "2026-07-09 05:00",
       "overdue_minutes": 0,
       "running": false
     },
     "last_completed": {
-      "lecture": 6,
-      "title": "팀 규모, 협업 구조, 그리고 파괴적 혁신",
-      "completed_at": "2026-07-08 05:08"
+      "lecture": 7,
+      "title": "창의성, 아이디어의 확산, 그리고 군집 행동",
+      "completed_at": "2026-07-08 15:00"
     },
     "course": "Dashun Wang 연구 흐름 따라잡기",
     "steps": [
       {
         "id": "schedule",
         "label": "예약 확인",
-        "detail": "다음 예약 2026-07-08 15:00",
+        "detail": "다음 예약 2026-07-09 05:00",
         "status": "ready",
         "current": true
       },
@@ -102,16 +102,16 @@
     ],
     "log": {
       "path": "/Users/jehyunlee/pc_agent/dashun_wang/launchd.out",
-      "age_seconds": 35228,
+      "age_seconds": 44,
       "tail": [
-        "      [8/10]",
-        "      [9/10]",
-        "      [10/10]",
-        "     15.6MB · ~34분 (첨부)",
         "     진도 이미지 생성 (203KB)",
         "  4) 이메일 발송",
         "     이메일 성공 (status 200) {\"id\":\"8e02fe8c-ce54-43d7-993c-5311dcd5f6bc\"}  → ['jehyun.lee@gmail.com', 'jehyunlee@kist.re.kr', 'wjkimrocks@kist.re.kr', 'wjkimrocks@gmail.com', 'yoonjuho@kist.re.kr', 'yoonjuho@hanyang.ac.kr', 'kimth@kist.re.kr', 'skong@kist.re.kr', 'kyulikim@kist.re.kr', 'gold@kist.re.kr', 'wyl4493@kist.re.kr', 'SJ1@kist.re.kr', 'syson@kist.re.kr', 'hyejae@kist.re.kr', 'minivy@gmail.com', 'zest.woosung@gmail.com', 'jywon337@gmail.com', 'youngsungson@gmail.com', 'dcbaek@gmail.com', 'impos0108@gmail.com', 'jeongwon@pebblous.ai', 'yoyogo@gmail.com']",
-        "[agent] 제6강 done 기록."
+        "[agent] 제6강 done 기록.",
+        "     오디오 첨부 14.6MB",
+        "  4) 메일 발송",
+        "     이메일 성공 (status 200) {\"id\":\"060d0e3e-51fe-4199-8b12-5e7cdf529d38\"}  → ['jehyun.lee@gmail.com', 'jehyunlee@kist.re.kr', 'wjkimrocks@kist.re.kr', 'wjkimrocks@gmail.com', 'yoonjuho@kist.re.kr', 'yoonjuho@hanyang.ac.kr', 'kimth@kist.re.kr', 'skong@kist.re.kr', 'kyulikim@kist.re.kr', 'gold@kist.re.kr', 'wyl4493@kist.re.kr', 'SJ1@kist.re.kr', 'syson@kist.re.kr', 'hyejae@kist.re.kr', 'minivy@gmail.com', 'zest.woosung@gmail.com', 'jywon337@gmail.com', 'youngsungson@gmail.com', 'dcbaek@gmail.com', 'impos0108@gmail.com', 'jeongwon@pebblous.ai', 'yoyogo@gmail.com']",
+        "[deliver] 제7강 done 기록."
       ]
     }
   },
@@ -120,10 +120,6 @@
     "watchdog": []
   },
   "events": [
-    {
-      "time": "2026-07-08T05:04:53.026817Z",
-      "message": "workflow=idle, current=schedule, target=L7"
-    },
     {
       "time": "2026-07-08T05:09:58.363143Z",
       "message": "workflow=idle, current=schedule, target=L7"
@@ -163,13 +159,13 @@
     {
       "time": "2026-07-08T05:55:46.085004Z",
       "message": "workflow=idle, current=schedule, target=L7"
+    },
+    {
+      "time": "2026-07-08T06:00:51.409482Z",
+      "message": "workflow=idle, current=schedule, target=L8"
     }
   ],
   "ssh_history": [
-    {
-      "time": "2026-07-07T05:34:26.213389Z",
-      "status": "pass"
-    },
     {
       "time": "2026-07-07T05:39:31.571554Z",
       "status": "pass"
@@ -1316,6 +1312,10 @@
     },
     {
       "time": "2026-07-08T05:55:46.085004Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-08T06:00:51.409482Z",
       "status": "pass"
     }
   ]

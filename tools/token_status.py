@@ -568,9 +568,16 @@ def status_rank(status: str) -> int:
 
 def load_prev_events() -> list[dict[str, str]]:
     try:
-        return json.loads(DATA.read_text(encoding="utf-8")).get("events", [])[-20:]
+        events = json.loads(DATA.read_text(encoding="utf-8")).get("events", [])[-20:]
     except Exception:
         return []
+    filtered: list[dict[str, str]] = []
+    for event in events:
+        message = str(event.get("message", "")) if isinstance(event, dict) else str(event)
+        if "connected=" in message or "provider APIs connected" in message:
+            continue
+        filtered.append(event)
+    return filtered[-20:]
 
 
 def build_history_entry(providers: list[dict[str, Any]], t: str) -> dict[str, Any]:

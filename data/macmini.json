@@ -1,8 +1,8 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-09T20:04:29.999014Z",
-  "overall": "warn",
-  "summary": "제10강 자동 시작을 확인 중입니다.",
+  "updated_at": "2026-07-09T20:09:35.560703Z",
+  "overall": "bad",
+  "summary": "제10강 예약 시각이 지났지만 digest 프로세스가 보이지 않습니다.",
   "checks": {
     "ssh": {
       "status": "ok",
@@ -18,15 +18,15 @@
     }
   },
   "workflow": {
-    "status": "warn",
-    "mode": "ready",
-    "summary": "제10강 자동 시작을 확인 중입니다.",
+    "status": "bad",
+    "mode": "stuck",
+    "summary": "제10강 예약 시각이 지났지만 digest 프로세스가 보이지 않습니다.",
     "current_step": "schedule",
     "target": {
       "lecture": 10,
       "title": "인공지능과 거대언어모델(LLM)이 여는 과학적 발견의 미래",
       "scheduled_at": "2026-07-10 05:00",
-      "overdue_minutes": 4,
+      "overdue_minutes": 9,
       "running": false
     },
     "last_completed": {
@@ -39,8 +39,8 @@
       {
         "id": "schedule",
         "label": "예약 확인",
-        "detail": "예약 시각 도달 후 4분, launchd 시작 확인 중",
-        "status": "on_progress",
+        "detail": "예약 시각 9분 경과, digest 미실행",
+        "status": "fail",
         "current": true
       },
       {
@@ -102,7 +102,7 @@
     ],
     "log": {
       "path": "/Users/jehyunlee/pc_agent/dashun_wang/launchd.out",
-      "age_seconds": 233,
+      "age_seconds": 538,
       "tail": [
         "[deliver] 제8강 done 기록.",
         "     오디오 첨부 15.7MB",
@@ -120,10 +120,6 @@
     "watchdog": []
   },
   "events": [
-    {
-      "time": "2026-07-09T19:13:31.109794Z",
-      "message": "workflow=idle, current=schedule, target=L10"
-    },
     {
       "time": "2026-07-09T19:18:36.984027Z",
       "message": "workflow=idle, current=schedule, target=L10"
@@ -163,13 +159,13 @@
     {
       "time": "2026-07-09T20:04:29.999014Z",
       "message": "workflow=ready, current=schedule, target=L10"
+    },
+    {
+      "time": "2026-07-09T20:09:35.560703Z",
+      "message": "workflow=stuck, current=schedule, target=L10"
     }
   ],
   "ssh_history": [
-    {
-      "time": "2026-07-08T19:41:04.309664Z",
-      "status": "pass"
-    },
     {
       "time": "2026-07-08T19:46:09.545848Z",
       "status": "pass"
@@ -1316,6 +1312,10 @@
     },
     {
       "time": "2026-07-09T20:04:29.999014Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-09T20:09:35.560703Z",
       "status": "pass"
     }
   ]

@@ -1,8 +1,8 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-09T20:09:35.560703Z",
-  "overall": "bad",
-  "summary": "제10강 예약 시각이 지났지만 digest 프로세스가 보이지 않습니다.",
+  "updated_at": "2026-07-09T20:14:41.143277Z",
+  "overall": "ok",
+  "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제11강 2026-07-10 15:00입니다.",
   "checks": {
     "ssh": {
       "status": "ok",
@@ -18,29 +18,29 @@
     }
   },
   "workflow": {
-    "status": "bad",
-    "mode": "stuck",
-    "summary": "제10강 예약 시각이 지났지만 digest 프로세스가 보이지 않습니다.",
+    "status": "ok",
+    "mode": "idle",
+    "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제11강 2026-07-10 15:00입니다.",
     "current_step": "schedule",
     "target": {
-      "lecture": 10,
-      "title": "인공지능과 거대언어모델(LLM)이 여는 과학적 발견의 미래",
-      "scheduled_at": "2026-07-10 05:00",
-      "overdue_minutes": 9,
+      "lecture": 11,
+      "title": "복잡계 네트워크의 시각화와 거시적 패턴 분석",
+      "scheduled_at": "2026-07-10 15:00",
+      "overdue_minutes": 0,
       "running": false
     },
     "last_completed": {
-      "lecture": 9,
-      "title": "과학의 공공성, 지정학적 긴장, 그리고 정치적 양극화",
-      "completed_at": "2026-07-09 15:00"
+      "lecture": 10,
+      "title": "인공지능과 거대언어모델(LLM)이 여는 과학적 발견의 미래",
+      "completed_at": "2026-07-10 05:11"
     },
     "course": "Dashun Wang 연구 흐름 따라잡기",
     "steps": [
       {
         "id": "schedule",
         "label": "예약 확인",
-        "detail": "예약 시각 9분 경과, digest 미실행",
-        "status": "fail",
+        "detail": "다음 예약 2026-07-10 15:00",
+        "status": "ready",
         "current": true
       },
       {
@@ -102,7 +102,7 @@
     ],
     "log": {
       "path": "/Users/jehyunlee/pc_agent/dashun_wang/launchd.out",
-      "age_seconds": 538,
+      "age_seconds": 844,
       "tail": [
         "[deliver] 제8강 done 기록.",
         "     오디오 첨부 15.7MB",
@@ -120,10 +120,6 @@
     "watchdog": []
   },
   "events": [
-    {
-      "time": "2026-07-09T19:18:36.984027Z",
-      "message": "workflow=idle, current=schedule, target=L10"
-    },
     {
       "time": "2026-07-09T19:23:42.872944Z",
       "message": "workflow=idle, current=schedule, target=L10"
@@ -163,13 +159,13 @@
     {
       "time": "2026-07-09T20:09:35.560703Z",
       "message": "workflow=stuck, current=schedule, target=L10"
+    },
+    {
+      "time": "2026-07-09T20:14:41.143277Z",
+      "message": "workflow=idle, current=schedule, target=L11"
     }
   ],
   "ssh_history": [
-    {
-      "time": "2026-07-08T19:46:09.545848Z",
-      "status": "pass"
-    },
     {
       "time": "2026-07-08T19:51:14.837137Z",
       "status": "pass"
@@ -1316,6 +1312,10 @@
     },
     {
       "time": "2026-07-09T20:09:35.560703Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-09T20:14:41.143277Z",
       "status": "pass"
     }
   ]

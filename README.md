@@ -1,6 +1,6 @@
 # Jehyun Dashboards
 
-개인 연구/운영 환경을 한눈에 보기 위한 정적 대시보드 모음입니다. 현재는 Mac mini에서 돌아가는 자동 작업과 OpenAI·Anthropic·Google 토큰/접속 상태를 웹 대시보드와 macOS 바탕화면 위젯으로 보여줍니다.
+개인 연구/운영 환경을 한눈에 보기 위한 정적 대시보드 모음입니다. 현재는 Mac mini에서 돌아가는 자동 작업과 OpenAI·Anthropic·Google 토큰 사용량을 웹 대시보드와 macOS 바탕화면 위젯으로 보여줍니다. API 접속 상태 probe는 모델 quota를 소모하므로 수집하지 않습니다.
 
 - 웹: <https://tech.jehyunlee.dev/dashboards/>
 - 토큰 대시보드: <https://tech.jehyunlee.dev/dashboards/tokens/>

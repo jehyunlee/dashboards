@@ -442,38 +442,30 @@ def make_provider(provider_id: str, label: str) -> dict[str, Any]:
     return {
         "id": provider_id,
         "label": label,
-        "status": "unknown",
-        "connection": {"ok": False, "detail": "Not checked."},
-        "model_probe": {},
-        "token_window": {"available": False, "source": "not checked"},
+        "status": "tracking",
+        "connection": {
+            "ok": None,
+            "measured": False,
+            "detail": "API connectivity checks are disabled; this dashboard tracks token usage only.",
+        },
+        "model_probe": {"measured": False, "detail": "Disabled to avoid consuming provider model quota."},
+        "token_window": {"available": False, "source": "api status probe disabled"},
         "billing": {"available": False, "detail": "Not checked."},
-        "notes": [],
+        "notes": ["API connectivity/model-availability probes are intentionally disabled so status collection does not consume model quota."],
     }
 
 
 def probe_openai(keys: dict[str, str]) -> dict[str, Any]:
     p = make_provider("openai", "OpenAI")
     key = keys.get("OPENAI_API_KEY") or keys.get("openai_key")
-    if not key:
-        p["status"] = "missing"
-        p["connection"] = {"ok": False, "detail": "OPENAI_API_KEY/openai_key not found on Mac mini."}
-        return p
-    headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
     admin_key = keys.get("OPENAI_ADMIN_API_KEY") or keys.get("OPENAI_ADMIN_KEY")
-    body = {"model": "gpt-4o-mini", "messages": [{"role": "user", "content": "ping"}], "max_tokens": 1}
-    resp = request_json("https://api.openai.com/v1/chat/completions", method="POST", headers=headers, body=body)
-    p["model_probe"] = {"model": "gpt-4o-mini", "status_code": resp["status_code"], "latency_ms": resp["latency_ms"]}
-    p["token_window"] = header_token_window(resp["headers"], "openai")
-    if resp["ok"]:
-        p["status"] = "ok"
-        p["connection"] = {"ok": True, "detail": "Generation API responded."}
-    else:
-        p["status"] = auth_status(resp["status_code"])
-        detail = "Invalid OpenAI API key configured on Mac mini." if resp["status_code"] in {401, 403} else (resp.get("error") or f"HTTP {resp['status_code']}")
-        p["connection"] = {"ok": False, "detail": detail}
+    billing_key = admin_key or key
+    if not billing_key:
+        p["status"] = "missing"
+        p["billing"] = {"available": False, "detail": "OpenAI usage/cost unavailable: OPENAI_API_KEY or OPENAI_ADMIN_API_KEY is not configured. API connectivity checks are intentionally disabled."}
+        return p
 
     start = int((datetime.now(timezone.utc) - timedelta(days=30)).timestamp())
-    billing_key = admin_key or key
     costs = request_json(f"https://api.openai.com/v1/organization/costs?start_time={start}&bucket_width=1d&limit=31", headers={"Authorization": f"Bearer {billing_key}"})
     p["billing"] = extract_openai_costs(costs)
     p["billing"]["window"] = "last_30d"
@@ -484,7 +476,7 @@ def probe_openai(keys: dict[str, str]) -> dict[str, Any]:
             p["billing"]["usage"] = usage
             p["billing"]["account_token_quota"] = {
                 "available": False,
-                "detail": "OpenAI API accounts do not expose a fixed cumulative account-token allowance or remaining-token balance through the Admin API. The available account-level controls are rate limits, usage/cost reporting, prepaid billing UI, and spend alerts.",
+                "detail": "OpenAI API accounts do not expose a fixed cumulative account-token allowance or remaining-token balance through the Admin API. The available account-level controls are usage/cost reporting, prepaid billing UI, and spend alerts.",
             }
             p["billing"]["spend_alerts"] = openai_spend_alerts(admin_key)
             p["usage_series"] = openai_usage_series(admin_key, datetime.now(timezone.utc))
@@ -503,11 +495,8 @@ def probe_openai(keys: dict[str, str]) -> dict[str, Any]:
                 p["billing"]["detail"] = "Admin key cost endpoint is reachable, but this OpenAI organization has 0 project API keys and 0 service accounts. The displayed 0 USD is probably for the wrong/empty organization, not the heavy Gajae Code workload."
                 p["billing"]["confidence"] = "suspect_org_mismatch"
     elif not admin_key:
-        p["billing"]["detail"] = "Organization cost not shown: OPENAI_ADMIN_API_KEY/OPENAI_ADMIN_KEY is not configured; rate-limit data above is from the normal API key."
-    if not p["token_window"].get("available"):
-        p["notes"].append("Token remaining/reset was not exposed in this response. A valid key or a billable model response is usually required.")
+        p["billing"]["detail"] = "Organization cost not shown: OPENAI_ADMIN_API_KEY/OPENAI_ADMIN_KEY is not configured. API connectivity checks are intentionally disabled."
     return p
-
 
 def anthropic_admin_usage_cost(admin_key: str, start_iso: str) -> dict[str, Any]:
     headers = {"x-api-key": admin_key, "anthropic-version": "2023-06-01"}
@@ -554,24 +543,6 @@ def anthropic_admin_usage_cost(admin_key: str, start_iso: str) -> dict[str, Any]
 
 def probe_anthropic(keys: dict[str, str]) -> dict[str, Any]:
     p = make_provider("anthropic", "Anthropic")
-    key = keys.get("ANTHROPIC_API_KEY") or keys.get("anthropic_key")
-    if not key:
-        p["status"] = "missing"
-        p["connection"] = {"ok": False, "detail": "ANTHROPIC_API_KEY/anthropic_key not found on Mac mini."}
-        return p
-    headers = {"x-api-key": key, "anthropic-version": "2023-06-01", "Content-Type": "application/json"}
-    model = os.environ.get("ANTHROPIC_STATUS_MODEL", "claude-haiku-4-5-20251001")
-    body = {"model": model, "max_tokens": 1, "messages": [{"role": "user", "content": "ping"}]}
-    resp = request_json("https://api.anthropic.com/v1/messages", method="POST", headers=headers, body=body)
-    p["model_probe"] = {"model": model, "status_code": resp["status_code"], "latency_ms": resp["latency_ms"]}
-    p["token_window"] = header_token_window(resp["headers"], "anthropic")
-    if resp["ok"]:
-        p["status"] = "ok"
-        p["connection"] = {"ok": True, "detail": "Messages API responded."}
-    else:
-        p["status"] = auth_status(resp["status_code"])
-        detail = "Invalid Anthropic API key configured on Mac mini." if resp["status_code"] in {401, 403} else (resp.get("error") or f"HTTP {resp['status_code']}")
-        p["connection"] = {"ok": False, "detail": detail}
     admin_key = keys.get("ANTHROPIC_ADMIN_API_KEY") or keys.get("ANTHROPIC_ADMIN_KEY")
     if admin_key:
         start_iso = (datetime.now(timezone.utc) - timedelta(days=30)).strftime("%Y-%m-%dT00:00:00Z")
@@ -582,90 +553,17 @@ def probe_anthropic(keys: dict[str, str]) -> dict[str, Any]:
             p["billing"] = {"available": False, "detail": f"Anthropic admin usage/cost unavailable: {report.get('detail')}"}
         p["usage_series"] = anthropic_usage_series(admin_key, datetime.now(timezone.utc))
     else:
-        p["billing"] = {"available": False, "detail": "Monthly usage/cost not shown: Anthropic Admin API key is not configured; Messages API connectivity and rate-limit headers above are valid."}
-    if not p["token_window"].get("available"):
-        p["notes"].append("Token remaining/reset headers were not available because the model request did not succeed or the provider omitted them.")
+        p["billing"] = {"available": False, "detail": "Monthly usage/cost not shown: Anthropic Admin API key is not configured. API connectivity checks are intentionally disabled."}
     return p
-
-
-def gemini_model_candidates(models_resp: dict[str, Any]) -> list[str]:
-    preferred = [
-        "models/gemini-2.5-flash",
-        "models/gemini-2.5-flash-lite",
-        "models/gemini-2.0-flash",
-        "models/gemini-2.0-flash-lite",
-        "models/gemini-1.5-flash",
-    ]
-    models = models_resp.get("json", {}).get("models", []) if isinstance(models_resp.get("json"), dict) else []
-    names = {m.get("name") for m in models if isinstance(m, dict) and m.get("name")}
-    out: list[str] = []
-
-    def add(name: str | None) -> None:
-        if name and name not in out and (not names or name in names):
-            out.append(name)
-
-    for name in preferred:
-        add(name)
-    for model in models:
-        if not isinstance(model, dict):
-            continue
-        methods = model.get("supportedGenerationMethods") or []
-        if "generateContent" in methods:
-            add(model.get("name"))
-    return out or preferred[:3]
-
-
-def choose_gemini_model(models_resp: dict[str, Any]) -> str:
-    candidates = gemini_model_candidates(models_resp)
-    return candidates[0] if candidates else "models/gemini-2.5-flash"
 
 
 def probe_gemini(keys: dict[str, str]) -> dict[str, Any]:
     p = make_provider("gemini", "Gemini")
-    key = keys.get("GOOGLE_API_KEY") or keys.get("GEMINI_API_KEY") or keys.get("google_api_key") or keys.get("gemini_api_key")
-    if not key:
-        p["status"] = "missing"
-        p["connection"] = {"ok": False, "detail": "GOOGLE_API_KEY/GEMINI_API_KEY not found on Mac mini."}
-        return p
-    models = request_json(f"https://generativelanguage.googleapis.com/v1beta/models?key={key}")
-    candidates = gemini_model_candidates(models) if models["ok"] else gemini_model_candidates({"json": {"models": []}})
-    body = {"contents": [{"parts": [{"text": "ping"}]}], "generationConfig": {"maxOutputTokens": 1}}
-    resp: dict[str, Any] | None = None
-    model = candidates[0] if candidates else "models/gemini-2.5-flash"
-    attempts: list[dict[str, Any]] = []
-    for candidate in candidates[:8]:
-        current = request_json(f"https://generativelanguage.googleapis.com/v1beta/{candidate}:generateContent?key={key}", method="POST", headers={"Content-Type": "application/json"}, body=body)
-        attempts.append({"model": candidate.replace("models/", ""), "status_code": current["status_code"], "latency_ms": current["latency_ms"]})
-        resp = current
-        model = candidate
-        if current["ok"] or current["status_code"] in {401, 403}:
-            break
-    if resp is None:
-        resp = {"ok": False, "status_code": None, "latency_ms": 0, "headers": {}, "json": {}, "error": "No Gemini models were available to probe."}
-    usage = resp.get("json", {}).get("usageMetadata", {}) if isinstance(resp.get("json"), dict) else {}
-    model_probe = {"model": model.replace("models/", ""), "status_code": resp["status_code"], "latency_ms": resp["latency_ms"], "usage": usage}
-    if len(attempts) > 1:
-        model_probe["attempts"] = attempts
-    p["model_probe"] = model_probe
-    p["token_window"] = header_token_window(resp["headers"], "gemini")
-    if resp["ok"]:
-        p["status"] = "ok"
-        detail = "Generative Language API responded."
-        if attempts and attempts[0]["model"] != model.replace("models/", ""):
-            detail = f"Generative Language API responded via {model.replace('models/', '')}; preferred {attempts[0]['model']} returned HTTP {attempts[0]['status_code']}."
-            p["notes"].append(detail)
-        p["connection"] = {"ok": True, "detail": detail}
-    else:
-        p["status"] = auth_status(resp["status_code"])
-        detail = "Invalid Gemini API key configured on Mac mini." if resp["status_code"] in {401, 403} else (resp.get("error") or f"HTTP {resp['status_code']}")
-        p["connection"] = {"ok": False, "detail": f"{model.replace('models/', '')}: {detail}"}
-    p["billing"] = {"available": False, "detail": "Gemini API keys do not expose project quota remaining through this endpoint; use Google Cloud quota APIs with project credentials for exact remaining quota."}
-    if not p["token_window"].get("available"):
-        p["notes"].append("No rate-limit token headers were exposed. The page shows API connectivity and per-probe token usage instead.")
+    p["billing"] = {"available": False, "detail": "Gemini API keys do not expose project quota remaining through the current dashboard endpoints. API connectivity checks are intentionally disabled; metered API usage comes from pipeline instrumentation."}
     return p
 
 def status_rank(status: str) -> int:
-    return {"ok": 0, "rate_limited": 1, "missing": 2, "auth_error": 3, "provider_error": 3, "error": 3}.get(status, 2)
+    return {"ok": 0, "tracking": 0, "warn": 1, "missing": 2, "auth_error": 3, "provider_error": 3, "error": 3}.get(status, 2)
 
 
 def load_prev_events() -> list[dict[str, str]]:
@@ -687,7 +585,6 @@ def build_history_entry(providers: list[dict[str, Any]], t: str) -> dict[str, An
         usage = (p.get("billing") or {}).get("usage") or {}
         account_tokens = usage.get("total_tokens") if usage.get("available") else None
         entry[p["id"]] = {
-            "connected": 1 if (p.get("connection") or {}).get("ok") else 0,
             "account_tokens": account_tokens,
             "api_used": api_used,
             "api_limit": int(api_limit) if api_limit is not None else None,
@@ -714,17 +611,15 @@ def main() -> None:
             # Gemini has no admin usage API; the metered (API) series comes from
             # pipeline instrumentation reported to the local usage receiver.
             _p["usage_series"] = pipeline_api_series("gemini", _sub_now)
-    worst = max((status_rank(p["status"]) for p in providers), default=2)
-    overall = "ok" if worst == 0 else "warn" if worst <= 2 else "bad"
-    connected = sum(1 for p in providers if p.get("connection", {}).get("ok"))
+    overall = "ok"
     events = load_prev_events()
     data = {
         "host": socket.gethostname(),
         "updated_at": updated,
         "overall": overall,
-        "summary": f"{connected}/{len(providers)} provider APIs connected.",
+        "summary": "Token usage telemetry updated; API connectivity checks are disabled.",
         "providers": providers,
-        "events": (events + [{"time": updated, "message": f"tokens overall={overall}, connected={connected}/{len(providers)}"}])[-20:],
+        "events": (events + [{"time": updated, "message": "token telemetry updated; api connectivity checks disabled"}])[-20:],
     }
 
     DATA.parent.mkdir(parents=True, exist_ok=True)
@@ -749,7 +644,7 @@ def main() -> None:
             run(["git", "pull", "--rebase", "origin", BRANCH], 60)
             push = run(["git", "push", "origin", BRANCH], 60)
         print(push.stdout.strip())
-    print(json.dumps({"updated_at": updated, "overall": overall, "connected": connected, "providers": {p["id"]: p["status"] for p in providers}}, ensure_ascii=False))
+    print(json.dumps({"updated_at": updated, "overall": overall, "api_status_checked": False, "providers": {p["id"]: p["status"] for p in providers}}, ensure_ascii=False))
 
 
 if __name__ == "__main__":

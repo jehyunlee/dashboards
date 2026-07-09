@@ -7,9 +7,9 @@ const $ = (id) => document.getElementById(id);
 
 function ageMs(iso){ const t = Date.parse(iso || ''); return Number.isFinite(t) ? Date.now() - t : Infinity; }
 function fmtAge(ms){ if(!Number.isFinite(ms)) return 'unknown'; const s=Math.max(0,Math.round(ms/1000)); if(s<90) return `${s}s ago`; const m=Math.round(s/60); if(m<90) return `${m}m ago`; const h=Math.round(m/60); return `${h}h ago`; }
-function cls(status){ return status === 'ok' ? 'ok' : ['missing','rate_limited','unknown'].includes(status) ? 'warn' : 'bad'; }
+function cls(status){ return ['ok','tracking'].includes(status) ? 'ok' : ['missing','rate_limited','warn','unknown'].includes(status) ? 'warn' : 'bad'; }
 function escapeHtml(s){ return String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
-function statusText(status){ return ({ok:'connected', missing:'missing', auth_error:'auth error', rate_limited:'rate limited', provider_error:'provider error', error:'error', unknown:'unknown'})[status] || status || 'unknown'; }
+function statusText(status){ return ({ok:'tracking', tracking:'tracking', missing:'missing', auth_error:'auth error', rate_limited:'rate limited', provider_error:'provider error', error:'error', warn:'warn', unknown:'unknown'})[status] || status || 'unknown'; }
 
 function fmtCompact(n){
   const x = Number(n);
@@ -40,18 +40,6 @@ const fetchHistory = async () => {
 };
 
 function lastN(arr, n){ return arr.slice(Math.max(0, arr.length - n)); }
-
-function connectionTicks(samples, pid){
-  const vis = lastN(samples, VISIBLE);
-  if(!vis.length) return {html:'<p class="nodata">아직 표본 없음 (5분마다 수집)</p>', sub:'—'};
-  const ticks = vis.map(s => {
-    const on = (s[pid] || {}).connected === 1;
-    const label = `${s.t || ''} · ${on ? 'connected' : 'down'}`;
-    return `<span class="tick ${on ? 'up' : 'down'}" title="${escapeHtml(label)}"></span>`;
-  }).join('');
-  const up = vis.filter(s => (s[pid] || {}).connected === 1).length;
-  return {html:`<div class="tickrow">${ticks}</div>`, sub:`${up}/${vis.length} up · ${VISIBLE*5/60}h`};
-}
 
 function usageBars(samples, pid, field, mode){
   let values;
@@ -109,8 +97,6 @@ function seriesBars(series){
 }
 
 function renderProvider(p, samples){
-  const conn = connectionTicks(samples, p.id);
-
   const subS = (p.subscription_series && p.subscription_series.available) ? p.subscription_series : null;
   const sub = seriesBars(subS);
   const subConfigured = !!(p.subscription_series);
@@ -145,11 +131,7 @@ function renderProvider(p, samples){
       ${subChart}
     </div>` : '';
   return `<article class="card provider provider-${escapeHtml(p.id)}">
-    <div class="card-head"><h3>${escapeHtml(p.label || p.id)}</h3><span class="badge ${cls(p.status)}">${escapeHtml(statusText(p.status))}</span></div>
-    <div class="series">
-      <div class="series-head"><span>API 접속상태</span><em>${escapeHtml(conn.sub)}</em></div>
-      ${conn.html}
-    </div>${subBlock}
+    <div class="card-head"><h3>${escapeHtml(p.label || p.id)}</h3><span class="badge ${cls(p.status)}">${escapeHtml(statusText(p.status))}</span></div>${subBlock}
     <div class="series">
       <div class="series-head"><span>API 토큰 사용량 (종량제) · 5분</span><em>${escapeHtml(apiMeta)}</em></div>
       ${apiChart}
@@ -167,7 +149,7 @@ async function refresh(){
     const stale = age > 30 * 60 * 1000;
     const overall = stale ? 'warn' : (d.overall || 'unknown');
     $('hero').className = `hero status-${cls(overall)}`;
-    $('overallTitle').textContent = overall === 'ok' ? 'All configured APIs connected' : overall === 'warn' ? 'Partial API status' : 'Provider check failing';
+    $('overallTitle').textContent = overall === 'ok' ? 'Token usage telemetry' : overall === 'warn' ? 'Token data stale' : 'Token data unavailable';
     $('overallDetail').textContent = `${d.summary || ''} · ${samples.length} samples · last update ${fmtAge(age)}${stale ? ' · stale' : ''}`;
     $('updatedAt').textContent = d.updated_at ? `updated ${new Date(d.updated_at).toLocaleString()}` : '—';
     $('providers').innerHTML = (d.providers || []).map(p => renderProvider(p, samples)).join('') || '<article class="card"><p>No providers found.</p></article>';

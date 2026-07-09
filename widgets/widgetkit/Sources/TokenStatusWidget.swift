@@ -294,16 +294,6 @@ struct MatrixDashboard: View {
             }
 
             MatrixMetricRow(
-                title: "API 접속",
-                subtitle: "5분 연결",
-                providers: visibleProviders,
-                labelWidth: labelWidth,
-                cellSpacing: cellSpacing
-            ) { provider in
-                ConnectionCell(provider: provider, history: history, tickCount: tickCount)
-            }
-
-            MatrixMetricRow(
                 title: "구독 토큰",
                 subtitle: "6h 누적",
                 providers: visibleProviders,
@@ -434,11 +424,6 @@ struct SmallMatrix: View {
             }
             .font(.caption2.weight(.black))
             .foregroundStyle(.secondary)
-
-            MiniMetricRow(title: "API", providers: visibleProviders) { provider in
-                Text(connectionSummary(connectionTicks(providerID: provider.id, history: history, count: tickCount)))
-                    .foregroundStyle(color(for: provider.status ?? "unknown"))
-            }
 
             MiniMetricRow(title: "SUB", providers: visibleProviders) { provider in
                 Text(subscriptionValue(provider))
@@ -605,23 +590,11 @@ struct ProviderTokenWidgetView: View {
     var body: some View {
         let snapshot = entry.snapshot
         let provider = providerStatus(providerID, snapshot: snapshot)
-        let ticks = connectionTicks(providerID: provider.id, history: entry.history, count: providerTickCount(for: family))
         let tint = providerTint(for: provider.id)
         let subscriptionTint = provider.id == "gemini" ? Color.secondary : tint
 
         VStack(alignment: .leading, spacing: spacious ? 12 : (compact ? 6 : 8)) {
             providerHeader(provider: provider, snapshot: snapshot)
-
-            ProviderMetricRow(
-                title: "API 현황",
-                value: connectionSummary(ticks),
-                detail: statusText(provider.status),
-                tint: color(for: provider.status ?? "unknown"),
-                compact: compact,
-                spacious: spacious
-            ) {
-                ConnectionTicksView(ticks: ticks, tint: color(for: provider.status ?? "unknown"))
-            }
 
             ProviderMetricRow(
                 title: "구독토큰사용",
@@ -757,7 +730,7 @@ struct OpenAITokenWidget: Widget {
             ProviderTokenWidgetView(entry: entry, providerID: "openai")
         }
         .configurationDisplayName("OpenAI Token Status")
-        .description("OpenAI의 API 현황, 구독토큰사용, API토큰사용을 3줄로 봅니다.")
+        .description("OpenAI의 구독토큰사용과 API토큰사용을 봅니다. API 상태 probe는 하지 않습니다.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
@@ -770,7 +743,7 @@ struct AnthropicTokenWidget: Widget {
             ProviderTokenWidgetView(entry: entry, providerID: "anthropic")
         }
         .configurationDisplayName("Anthropic Token Status")
-        .description("Anthropic의 API 현황, 구독토큰사용, API토큰사용을 3줄로 봅니다.")
+        .description("Anthropic의 구독토큰사용과 API토큰사용을 봅니다. API 상태 probe는 하지 않습니다.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
@@ -783,7 +756,7 @@ struct GoogleTokenWidget: Widget {
             ProviderTokenWidgetView(entry: entry, providerID: "gemini")
         }
         .configurationDisplayName("Google Token Status")
-        .description("Google의 API 현황, 구독토큰사용, API토큰사용을 3줄로 봅니다.")
+        .description("Google/Gemini의 API토큰사용을 봅니다. API 상태 probe는 하지 않습니다.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge])
     }
 }
@@ -796,7 +769,7 @@ struct TokenStatusWidget: Widget {
             TokenStatusWidgetView(entry: entry)
         }
         .configurationDisplayName("Token Matrix")
-        .description("OpenAI, Anthropic, Google의 API 접속·구독 토큰·API 토큰 흐름을 봅니다.")
+        .description("OpenAI, Anthropic, Google의 구독 토큰·API 토큰 흐름을 봅니다. API 상태 probe는 하지 않습니다.")
         .supportedFamilies([.systemSmall, .systemMedium, .systemLarge, .systemExtraLarge])
     }
 }
@@ -820,11 +793,11 @@ private extension TokenSnapshot {
     static let placeholder = TokenSnapshot(
         updatedAt: ISO8601DateFormatter().string(from: Date()),
         overall: "ok",
-        summary: "3/3 provider APIs connected.",
+        summary: "Token usage telemetry updated; API checks disabled.",
         providers: [
-            ProviderStatus(id: "openai", label: "OpenAI", status: "ok", billing: Billing(monthToDateCost: 23.93, usage: BillingUsage(totalTokens: 17_300_000)), usageSeries: UsageSeries(available: true, points: placeholderPoints(seed: 2)), subscriptionSeries: UsageSeries(available: true, points: placeholderPoints(seed: 5)), tokenWindow: nil),
-            ProviderStatus(id: "anthropic", label: "Anthropic", status: "ok", billing: Billing(monthToDateCost: 14582, usage: BillingUsage(totalTokens: 21_200_000)), usageSeries: UsageSeries(available: true, points: placeholderPoints(seed: 4)), subscriptionSeries: UsageSeries(available: true, points: placeholderPoints(seed: 9)), tokenWindow: nil),
-            ProviderStatus(id: "gemini", label: "Gemini", status: "ok", billing: nil, usageSeries: UsageSeries(available: true, points: placeholderPoints(seed: 1)), subscriptionSeries: nil, tokenWindow: nil)
+            ProviderStatus(id: "openai", label: "OpenAI", status: "tracking", billing: Billing(monthToDateCost: 23.93, usage: BillingUsage(totalTokens: 17_300_000)), usageSeries: UsageSeries(available: true, points: placeholderPoints(seed: 2)), subscriptionSeries: UsageSeries(available: true, points: placeholderPoints(seed: 5)), tokenWindow: nil),
+            ProviderStatus(id: "anthropic", label: "Anthropic", status: "tracking", billing: Billing(monthToDateCost: 14582, usage: BillingUsage(totalTokens: 21_200_000)), usageSeries: UsageSeries(available: true, points: placeholderPoints(seed: 4)), subscriptionSeries: UsageSeries(available: true, points: placeholderPoints(seed: 9)), tokenWindow: nil),
+            ProviderStatus(id: "gemini", label: "Gemini", status: "tracking", billing: nil, usageSeries: UsageSeries(available: true, points: placeholderPoints(seed: 1)), subscriptionSeries: nil, tokenWindow: nil)
         ]
     )
 
@@ -898,7 +871,7 @@ private func shortName(_ provider: ProviderStatus) -> String {
 
 private func statusText(_ status: String?) -> String {
     switch status {
-    case "ok": return "connected"
+    case "ok", "tracking": return "tracking"
     case "warn", "rate_limited": return "limited"
     case "missing": return "missing"
     case "auth_error": return "auth"
@@ -908,7 +881,7 @@ private func statusText(_ status: String?) -> String {
 
 private func color(for status: String) -> Color {
     switch status {
-    case "ok": return .green
+    case "ok", "tracking": return .green
     case "warn", "missing", "rate_limited", "unknown": return .orange
     default: return .red
     }

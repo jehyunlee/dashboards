@@ -12,10 +12,10 @@
 
 | 위젯 | 용도 | 크기 |
 | --- | --- | --- |
-| `Token Matrix` | OpenAI·Anthropic·Google의 API 접속, 구독 토큰, API 토큰을 한 화면에 매트릭스로 표시 | Small, Medium, Large, Extra Large* |
-| `OpenAI Token Status` | OpenAI만 3줄로 표시 | Small, Medium, Large |
-| `Anthropic Token Status` | Anthropic만 3줄로 표시 | Small, Medium, Large |
-| `Google Token Status` | Google/Gemini만 3줄로 표시 | Small, Medium, Large |
+| `Token Matrix` | OpenAI·Anthropic·Google의 구독 토큰과 API 토큰을 한 화면에 매트릭스로 표시 | Small, Medium, Large, Extra Large* |
+| `OpenAI Token Status` | OpenAI의 구독 토큰과 API 토큰을 표시 | Small, Medium, Large |
+| `Anthropic Token Status` | Anthropic의 구독 토큰과 API 토큰을 표시 | Small, Medium, Large |
+| `Google Token Status` | Google/Gemini의 API 토큰을 표시 | Small, Medium, Large |
 
 `Extra Large`는 macOS가 해당 위젯 표면에서 제공할 때만 선택됩니다. Apple WidgetKit은 임의 픽셀 폭, 예를 들어 “지금보다 가로 2배” 같은 크기를 직접 지정할 수 없습니다. 그래서 provider별 위젯을 따로 제공해 세 개를 나란히 놓을 수 있게 했습니다.
 

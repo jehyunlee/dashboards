@@ -70,7 +70,7 @@ GOOGLE_API_KEY=AIza...
 - Anthropic Admin: `ANTHROPIC_ADMIN_API_KEY`, `ANTHROPIC_ADMIN_KEY`
 - Google/Gemini: `GOOGLE_API_KEY`, `GEMINI_API_KEY`, `google_api_key`, `gemini_api_key`
 
-Admin key가 없으면 API 접속 상태는 볼 수 있지만 월간 사용량/비용 또는 5분 단위 API 사용량 일부가 비어 있을 수 있습니다.
+API 접속 상태 probe는 모델 quota를 소모하므로 실행하지 않습니다. Admin key가 없으면 월간 사용량/비용 또는 5분 단위 API 사용량 일부가 비어 있을 수 있습니다.
 
 ## 데이터 게시
 
@@ -84,7 +84,7 @@ python3 $HOME/pc_agent/dashboards/tools/token_status.py
 게시 결과:
 
 - `data/tokens.json`: 현재 provider별 상태
-- `data/tokens_history.json`: 5분 단위 API 접속 이력
+- `data/tokens_history.json`: 5분 단위 토큰 사용량 표본 이력
 
 스크립트는 `data` 브랜치에서 pull/rebase 후 변경된 JSON을 commit/push합니다.
 

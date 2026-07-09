@@ -5,9 +5,9 @@ const $ = (id) => document.getElementById(id);
 
 function ageMs(iso){ const t = Date.parse(iso || ''); return Number.isFinite(t) ? Date.now() - t : Infinity; }
 function fmtAge(ms){ if(!Number.isFinite(ms)) return 'unknown'; const s=Math.max(0,Math.round(ms/1000)); if(s<90) return `${s}s ago`; const m=Math.round(s/60); if(m<90) return `${m}m ago`; const h=Math.round(m/60); return `${h}h ago`; }
-function cls(status){ return status === 'ok' ? 'ok' : ['missing','rate_limited','warn','unknown'].includes(status) ? 'warn' : 'bad'; }
+function cls(status){ return ['ok','tracking'].includes(status) ? 'ok' : ['missing','rate_limited','warn','unknown'].includes(status) ? 'warn' : 'bad'; }
 function escapeHtml(s){ return String(s ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch])); }
-function statusText(status){ return ({ok:'connected', missing:'missing', auth_error:'auth error', rate_limited:'rate limited', provider_error:'provider error', error:'error', unknown:'unknown'})[status] || status || 'unknown'; }
+function statusText(status){ return ({ok:'tracking', tracking:'tracking', missing:'missing', auth_error:'auth error', rate_limited:'rate limited', provider_error:'provider error', error:'error', warn:'warn', unknown:'unknown'})[status] || status || 'unknown'; }
 
 function fmtCompact(n){
   const x = Number(n);
@@ -52,7 +52,6 @@ function seriesTotal(series){
 function renderProvider(p){
   const billing = p.billing || {};
   const usage = billing.usage || {};
-  const windowTokens = p.token_window?.tokens || {};
   const api6h = seriesTotal(p.usage_series);
   const sub6h = seriesTotal(p.subscription_series);
   const hasSub = p.id !== 'gemini' && p.subscription_series;
@@ -70,7 +69,6 @@ function renderProvider(p){
     <div class="metric"><span>API 6h</span><b>${fmtCompact(api6h)} tokens</b></div>
     ${spark(p.usage_series)}
     ${hasSub ? `<div class="metric"><span>CLI subscription 6h</span><b>${fmtCompact(sub6h)} tokens</b></div>${spark(p.subscription_series)}` : ''}
-    ${windowTokens.remaining ? `<p class="note">rate window remaining ${fmtCompact(windowTokens.remaining)} / ${fmtCompact(windowTokens.limit)}</p>` : ''}
   </article>`;
 }
 
@@ -81,7 +79,7 @@ async function refresh(){
     const stale = age > 30 * 60 * 1000;
     const overall = stale ? 'warn' : (d.overall || 'unknown');
     $('widget').className = `widget status-${cls(overall)}`;
-    $('title').textContent = overall === 'ok' ? 'APIs connected' : overall === 'warn' ? 'Token status stale' : 'Provider check failing';
+    $('title').textContent = overall === 'ok' ? 'Token usage telemetry' : overall === 'warn' ? 'Token data stale' : 'Token data unavailable';
     $('detail').textContent = `${d.summary || ''} · ${fmtAge(age)}${stale ? ' · stale' : ''}`;
     $('updatedAt').textContent = d.updated_at ? new Date(d.updated_at).toLocaleString([], {month:'short', day:'numeric', hour:'2-digit', minute:'2-digit'}) : 'not updated';
     $('providers').innerHTML = (d.providers || []).map(renderProvider).join('') || '<div class="empty">No providers found.</div>';

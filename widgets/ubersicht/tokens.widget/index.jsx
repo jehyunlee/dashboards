@@ -89,10 +89,10 @@ function fmtAge(ms) {
   return `${Math.round(m / 60)}h ago`;
 }
 function cls(status) {
-  return status === 'ok' ? 'ok' : ['missing', 'rate_limited', 'warn', 'unknown'].includes(status) ? 'warn' : 'bad';
+  return ['ok', 'tracking'].includes(status) ? 'ok' : ['missing', 'rate_limited', 'warn', 'unknown'].includes(status) ? 'warn' : 'bad';
 }
 function statusText(status) {
-  return ({ ok: 'connected', missing: 'missing', auth_error: 'auth error', rate_limited: 'rate limited', provider_error: 'provider error', error: 'error', unknown: 'unknown' })[status] || status || 'unknown';
+  return ({ ok: 'tracking', tracking: 'tracking', missing: 'missing', auth_error: 'auth error', rate_limited: 'rate limited', provider_error: 'provider error', error: 'error', warn: 'warn', unknown: 'unknown' })[status] || status || 'unknown';
 }
 function fmtCompact(n) {
   const x = Number(n);
@@ -137,7 +137,6 @@ function Spark({ series }) {
 function ProviderCard({ provider: p }) {
   const billing = p.billing || {};
   const usage = billing.usage || {};
-  const windowTokens = (p.token_window && p.token_window.tokens) || {};
   const hasSub = p.id !== 'gemini' && p.subscription_series;
 
   return (
@@ -154,7 +153,6 @@ function ProviderCard({ provider: p }) {
       <Spark series={p.usage_series} />
       {hasSub ? <div className="metric"><span>CLI subscription 6h</span><b>{fmtCompact(seriesTotal(p.subscription_series))} tokens</b></div> : null}
       {hasSub ? <Spark series={p.subscription_series} /> : null}
-      {windowTokens.remaining ? <p className="note">rate window remaining {fmtCompact(windowTokens.remaining)} / {fmtCompact(windowTokens.limit)}</p> : null}
     </article>
   );
 }
@@ -194,7 +192,7 @@ export const render = ({ data, error }) => {
   const stale = age > STALE_MS;
   const overall = stale ? 'warn' : (data.overall || 'unknown');
   const providers = data.providers || [];
-  const title = overall === 'ok' ? 'APIs connected' : overall === 'warn' ? 'Token status stale' : 'Provider check failing';
+  const title = overall === 'ok' ? 'Token usage telemetry' : overall === 'warn' ? 'Token data stale' : 'Token data unavailable';
   const updatedAt = data.updated_at ? new Date(data.updated_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'not updated';
 
   return (

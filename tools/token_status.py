@@ -588,20 +588,36 @@ def probe_anthropic(keys: dict[str, str]) -> dict[str, Any]:
     return p
 
 
-def choose_gemini_model(models_resp: dict[str, Any]) -> str:
-    preferred = ["models/gemini-2.5-flash", "models/gemini-2.0-flash", "models/gemini-1.5-flash"]
+def gemini_model_candidates(models_resp: dict[str, Any]) -> list[str]:
+    preferred = [
+        "models/gemini-2.5-flash",
+        "models/gemini-2.5-flash-lite",
+        "models/gemini-2.0-flash",
+        "models/gemini-2.0-flash-lite",
+        "models/gemini-1.5-flash",
+    ]
     models = models_resp.get("json", {}).get("models", []) if isinstance(models_resp.get("json"), dict) else []
-    names = {m.get("name") for m in models if isinstance(m, dict)}
+    names = {m.get("name") for m in models if isinstance(m, dict) and m.get("name")}
+    out: list[str] = []
+
+    def add(name: str | None) -> None:
+        if name and name not in out and (not names or name in names):
+            out.append(name)
+
     for name in preferred:
-        if name in names:
-            return name
+        add(name)
     for model in models:
         if not isinstance(model, dict):
             continue
         methods = model.get("supportedGenerationMethods") or []
-        if "generateContent" in methods and model.get("name"):
-            return model["name"]
-    return "models/gemini-2.5-flash"
+        if "generateContent" in methods:
+            add(model.get("name"))
+    return out or preferred[:3]
+
+
+def choose_gemini_model(models_resp: dict[str, Any]) -> str:
+    candidates = gemini_model_candidates(models_resp)
+    return candidates[0] if candidates else "models/gemini-2.5-flash"
 
 
 def probe_gemini(keys: dict[str, str]) -> dict[str, Any]:
@@ -612,24 +628,41 @@ def probe_gemini(keys: dict[str, str]) -> dict[str, Any]:
         p["connection"] = {"ok": False, "detail": "GOOGLE_API_KEY/GEMINI_API_KEY not found on Mac mini."}
         return p
     models = request_json(f"https://generativelanguage.googleapis.com/v1beta/models?key={key}")
-    model = choose_gemini_model(models) if models["ok"] else "models/gemini-2.5-flash"
+    candidates = gemini_model_candidates(models) if models["ok"] else gemini_model_candidates({"json": {"models": []}})
     body = {"contents": [{"parts": [{"text": "ping"}]}], "generationConfig": {"maxOutputTokens": 1}}
-    resp = request_json(f"https://generativelanguage.googleapis.com/v1beta/{model}:generateContent?key={key}", method="POST", headers={"Content-Type": "application/json"}, body=body)
+    resp: dict[str, Any] | None = None
+    model = candidates[0] if candidates else "models/gemini-2.5-flash"
+    attempts: list[dict[str, Any]] = []
+    for candidate in candidates[:8]:
+        current = request_json(f"https://generativelanguage.googleapis.com/v1beta/{candidate}:generateContent?key={key}", method="POST", headers={"Content-Type": "application/json"}, body=body)
+        attempts.append({"model": candidate.replace("models/", ""), "status_code": current["status_code"], "latency_ms": current["latency_ms"]})
+        resp = current
+        model = candidate
+        if current["ok"] or current["status_code"] in {401, 403}:
+            break
+    if resp is None:
+        resp = {"ok": False, "status_code": None, "latency_ms": 0, "headers": {}, "json": {}, "error": "No Gemini models were available to probe."}
     usage = resp.get("json", {}).get("usageMetadata", {}) if isinstance(resp.get("json"), dict) else {}
-    p["model_probe"] = {"model": model.replace("models/", ""), "status_code": resp["status_code"], "latency_ms": resp["latency_ms"], "usage": usage}
+    model_probe = {"model": model.replace("models/", ""), "status_code": resp["status_code"], "latency_ms": resp["latency_ms"], "usage": usage}
+    if len(attempts) > 1:
+        model_probe["attempts"] = attempts
+    p["model_probe"] = model_probe
     p["token_window"] = header_token_window(resp["headers"], "gemini")
     if resp["ok"]:
         p["status"] = "ok"
-        p["connection"] = {"ok": True, "detail": "Generative Language API responded."}
+        detail = "Generative Language API responded."
+        if attempts and attempts[0]["model"] != model.replace("models/", ""):
+            detail = f"Generative Language API responded via {model.replace('models/', '')}; preferred {attempts[0]['model']} returned HTTP {attempts[0]['status_code']}."
+            p["notes"].append(detail)
+        p["connection"] = {"ok": True, "detail": detail}
     else:
         p["status"] = auth_status(resp["status_code"])
         detail = "Invalid Gemini API key configured on Mac mini." if resp["status_code"] in {401, 403} else (resp.get("error") or f"HTTP {resp['status_code']}")
-        p["connection"] = {"ok": False, "detail": detail}
+        p["connection"] = {"ok": False, "detail": f"{model.replace('models/', '')}: {detail}"}
     p["billing"] = {"available": False, "detail": "Gemini API keys do not expose project quota remaining through this endpoint; use Google Cloud quota APIs with project credentials for exact remaining quota."}
     if not p["token_window"].get("available"):
         p["notes"].append("No rate-limit token headers were exposed. The page shows API connectivity and per-probe token usage instead.")
     return p
-
 
 def status_rank(status: str) -> int:
     return {"ok": 0, "rate_limited": 1, "missing": 2, "auth_error": 3, "provider_error": 3, "error": 3}.get(status, 2)

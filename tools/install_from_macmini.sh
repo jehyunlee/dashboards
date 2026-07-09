@@ -31,6 +31,15 @@ git merge --ff-only "$REMOTE/$BRANCH"
 git config core.hooksPath .githooks
 
 ./widgets/widgetkit/build-install.sh
+
+RUNTIME_REPORTER="$HOME/pc_agent/otel/gjc_usage_reporter.py"
+if [ -f "$RUNTIME_REPORTER" ] && [ -f ./tools/gjc_usage_reporter.py ]; then
+  cp ./tools/gjc_usage_reporter.py "$RUNTIME_REPORTER"
+  chmod +x "$RUNTIME_REPORTER"
+  if launchctl print "gui/$(id -u)/dev.jehyunlee.gjc-usage-reporter" >/dev/null 2>&1; then
+    launchctl kickstart -k "gui/$(id -u)/dev.jehyunlee.gjc-usage-reporter" >/dev/null 2>&1 || true
+  fi
+fi
 killall chronod >/dev/null 2>&1 || true
 open "$APP"
 

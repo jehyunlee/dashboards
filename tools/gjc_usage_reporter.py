@@ -28,7 +28,7 @@ BACKFILL_SECONDS = 12 * 3600  # on first run, only backfill sessions touched wit
 PROVIDERS = {"anthropic", "openai"}  # 구독 rows: anthropic=Claude Code, openai=Codex
 
 
-def normalize_provider(provider: str) -> str | None:
+def normalize_provider(provider: str):
     provider = provider.lower()
     if provider == "anthropic" or provider.startswith("anthropic-"):
         return "anthropic"

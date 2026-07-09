@@ -1,8 +1,8 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-09T19:59:24.117885Z",
-  "overall": "ok",
-  "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제10강 2026-07-10 05:00입니다.",
+  "updated_at": "2026-07-09T20:04:29.999014Z",
+  "overall": "warn",
+  "summary": "제10강 자동 시작을 확인 중입니다.",
   "checks": {
     "ssh": {
       "status": "ok",
@@ -18,15 +18,15 @@
     }
   },
   "workflow": {
-    "status": "ok",
-    "mode": "idle",
-    "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제10강 2026-07-10 05:00입니다.",
+    "status": "warn",
+    "mode": "ready",
+    "summary": "제10강 자동 시작을 확인 중입니다.",
     "current_step": "schedule",
     "target": {
       "lecture": 10,
       "title": "인공지능과 거대언어모델(LLM)이 여는 과학적 발견의 미래",
       "scheduled_at": "2026-07-10 05:00",
-      "overdue_minutes": 0,
+      "overdue_minutes": 4,
       "running": false
     },
     "last_completed": {
@@ -39,8 +39,8 @@
       {
         "id": "schedule",
         "label": "예약 확인",
-        "detail": "다음 예약 2026-07-10 05:00",
-        "status": "ready",
+        "detail": "예약 시각 도달 후 4분, launchd 시작 확인 중",
+        "status": "on_progress",
         "current": true
       },
       {
@@ -102,16 +102,16 @@
     ],
     "log": {
       "path": "/Users/jehyunlee/pc_agent/dashun_wang/launchd.out",
-      "age_seconds": 50356,
+      "age_seconds": 233,
       "tail": [
-        "     오디오 첨부 18.8MB",
-        "  4) 메일 발송",
-        "     이메일 성공 (status 200) {\"id\":\"f256aa06-5daa-4f85-a3c2-119b18af1eff\"}  → ['jehyun.lee@gmail.com', 'jehyunlee@kist.re.kr', 'wjkimrocks@kist.re.kr', 'wjkimrocks@gmail.com', 'yoonjuho@kist.re.kr', 'yoonjuho@hanyang.ac.kr', 'kimth@kist.re.kr', 'skong@kist.re.kr', 'kyulikim@kist.re.kr', 'gold@kist.re.kr', 'wyl4493@kist.re.kr', 'SJ1@kist.re.kr', 'syson@kist.re.kr', 'hyejae@kist.re.kr', 'minivy@gmail.com', 'zest.woosung@gmail.com', 'jywon337@gmail.com', 'youngsungson@gmail.com', 'dcbaek@gmail.com', 'impos0108@gmail.com', 'jeongwon@pebblous.ai', 'yoyogo@gmail.com', 'young@ibs.re.kr']",
         "[deliver] 제8강 done 기록.",
         "     오디오 첨부 15.7MB",
         "  4) 메일 발송",
         "     이메일 성공 (status 200) {\"id\":\"e3cce0fe-d124-4157-b365-7a8723485846\"}  → ['jehyun.lee@gmail.com', 'jehyunlee@kist.re.kr', 'wjkimrocks@kist.re.kr', 'wjkimrocks@gmail.com', 'yoonjuho@kist.re.kr', 'yoonjuho@hanyang.ac.kr', 'kimth@kist.re.kr', 'skong@kist.re.kr', 'kyulikim@kist.re.kr', 'gold@kist.re.kr', 'wyl4493@kist.re.kr', 'SJ1@kist.re.kr', 'syson@kist.re.kr', 'hyejae@kist.re.kr', 'minivy@gmail.com', 'zest.woosung@gmail.com', 'jywon337@gmail.com', 'youngsungson@gmail.com', 'dcbaek@gmail.com', 'impos0108@gmail.com', 'jeongwon@pebblous.ai', 'yoyogo@gmail.com', 'young@ibs.re.kr']",
-        "[deliver] 제9강 done 기록."
+        "[deliver] 제9강 done 기록.",
+        "     오디오 첨부 15.6MB",
+        "  4) 메일 발송",
+        "[error] 제10강 처리 실패: URLError(BrokenPipeError(32, 'Broken pipe')) — 다음 강 계속"
       ]
     }
   },
@@ -120,10 +120,6 @@
     "watchdog": []
   },
   "events": [
-    {
-      "time": "2026-07-09T19:08:25.756227Z",
-      "message": "workflow=idle, current=schedule, target=L10"
-    },
     {
       "time": "2026-07-09T19:13:31.109794Z",
       "message": "workflow=idle, current=schedule, target=L10"
@@ -163,13 +159,13 @@
     {
       "time": "2026-07-09T19:59:24.117885Z",
       "message": "workflow=idle, current=schedule, target=L10"
+    },
+    {
+      "time": "2026-07-09T20:04:29.999014Z",
+      "message": "workflow=ready, current=schedule, target=L10"
     }
   ],
   "ssh_history": [
-    {
-      "time": "2026-07-08T19:35:58.739310Z",
-      "status": "pass"
-    },
     {
       "time": "2026-07-08T19:41:04.309664Z",
       "status": "pass"
@@ -1316,6 +1312,10 @@
     },
     {
       "time": "2026-07-09T19:59:24.117885Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-09T20:04:29.999014Z",
       "status": "pass"
     }
   ]

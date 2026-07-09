@@ -76,6 +76,7 @@ def to_seconds(ts) -> float:
 def main() -> None:
     st = load_state()
     offsets = st.setdefault("offsets", {})
+    next_offsets = dict(offsets)
     first_run = not bool(offsets)
     cutoff = time.time() - BACKFILL_SECONDS
     files = glob.glob(str(SESS_DIR / "**" / "*.jsonl"), recursive=True)
@@ -89,7 +90,7 @@ def main() -> None:
         off = offsets.get(f)
         if off is None:
             if first_run and os.path.getmtime(f) < cutoff:
-                offsets[f] = size  # skip ancient backfill on first run
+                next_offsets[f] = size  # skip ancient backfill on first run
                 continue
             off = 0
         if off > size:
@@ -106,7 +107,7 @@ def main() -> None:
         if last_nl < 0:
             continue  # no complete line yet
         chunk = data[: last_nl + 1]
-        offsets[f] = off + len(chunk)
+        next_offsets[f] = off + len(chunk)
         for line in chunk.split(b"\n"):
             line = line.strip()
             if not line:
@@ -138,13 +139,21 @@ def main() -> None:
             d["cacheRead"] += cr
             d["cacheCreation"] += cw
 
+    if not agg:
+        st["offsets"] = next_offsets
+        save_state(st)
+        return
+
     ok = 0
     for (bstart, prov), bt in sorted(agg.items()):
         if post({"provider": prov, "by_type": bt, "ts": bstart}):
             ok += 1
-    save_state(st)
-    if agg:
-        print(f"gjc_usage_reporter: posted {ok}/{len(agg)} bin-records", flush=True)
+    if ok == len(agg):
+        st["offsets"] = next_offsets
+        save_state(st)
+    else:
+        print("gjc_usage_reporter: not advancing offsets because posting failed", flush=True)
+    print(f"gjc_usage_reporter: posted {ok}/{len(agg)} bin-records", flush=True)
 
 
 if __name__ == "__main__":

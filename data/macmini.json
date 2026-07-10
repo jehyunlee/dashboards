@@ -1,8 +1,8 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-10T05:55:33.239003Z",
+  "updated_at": "2026-07-10T06:00:38.518737Z",
   "overall": "ok",
-  "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제11강 2026-07-10 15:00입니다.",
+  "summary": "모든 예약 작업이 끝났습니다.",
   "checks": {
     "ssh": {
       "status": "ok",
@@ -19,100 +19,91 @@
   },
   "workflow": {
     "status": "ok",
-    "mode": "idle",
-    "summary": "할 일을 다 하고 쉬는 중입니다. 다음 작업은 제11강 2026-07-10 15:00입니다.",
-    "current_step": "schedule",
+    "mode": "complete",
+    "summary": "모든 예약 작업이 끝났습니다.",
+    "current_step": "ledger",
     "target": {
-      "lecture": 11,
-      "title": "복잡계 네트워크의 시각화와 거시적 패턴 분석",
-      "scheduled_at": "2026-07-10 15:00",
+      "lecture": null,
+      "title": "all complete",
+      "scheduled_at": null,
       "overdue_minutes": 0,
       "running": false
     },
     "last_completed": {
-      "lecture": 10,
-      "title": "인공지능과 거대언어모델(LLM)이 여는 과학적 발견의 미래",
-      "completed_at": "2026-07-10 05:11"
+      "lecture": 11,
+      "title": "복잡계 네트워크의 시각화와 거시적 패턴 분석",
+      "completed_at": "2026-07-10 15:00"
     },
     "course": "Dashun Wang 연구 흐름 따라잡기",
     "steps": [
       {
         "id": "schedule",
         "label": "예약 확인",
-        "detail": "다음 예약 2026-07-10 15:00",
-        "status": "ready",
-        "current": true
+        "detail": "하루 2회 launchd 예약 시각 확인",
+        "status": "done",
+        "current": false
       },
       {
         "id": "start",
         "label": "프로세스 시작",
         "detail": "launchd 또는 watchdog이 digest 실행",
-        "status": "ready",
+        "status": "done",
         "current": false
       },
       {
         "id": "evidence",
         "label": "논문 근거 수집",
         "detail": "핵심 논문·연결 그래프 수집",
-        "status": "ready",
+        "status": "done",
         "current": false
       },
       {
         "id": "report",
         "label": "리포트·HTML 제작",
         "detail": "Deeper Research, 그림, 논문 연결 지도",
-        "status": "ready",
+        "status": "done",
         "current": false
       },
       {
         "id": "script",
         "label": "오디오 대본 생성",
         "detail": "분할 대본 병렬 생성",
-        "status": "ready",
+        "status": "done",
         "current": false
       },
       {
         "id": "tts",
         "label": "TTS·MP3 변환",
         "detail": "Gemini TTS 호출과 MP3 인코딩",
-        "status": "ready",
+        "status": "done",
         "current": false
       },
       {
         "id": "image",
         "label": "메일 이미지 첨부",
         "detail": "커리큘럼 진도 PNG 생성",
-        "status": "ready",
+        "status": "done",
         "current": false
       },
       {
         "id": "email",
         "label": "메일 발송",
         "detail": "HTML과 오디오 파일 전송",
-        "status": "ready",
+        "status": "done",
         "current": false
       },
       {
         "id": "ledger",
         "label": "완료 기록·휴식",
         "detail": "ledger 저장 후 다음 예약까지 대기",
-        "status": "ready",
+        "status": "done",
         "current": false
       }
     ],
     "log": {
-      "path": "/Users/jehyunlee/pc_agent/dashun_wang/launchd.out",
-      "age_seconds": 35696,
-      "tail": [
-        "[deliver] 제8강 done 기록.",
-        "     오디오 첨부 15.7MB",
-        "  4) 메일 발송",
-        "     이메일 성공 (status 200) {\"id\":\"e3cce0fe-d124-4157-b365-7a8723485846\"}  → ['jehyun.lee@gmail.com', 'jehyunlee@kist.re.kr', 'wjkimrocks@kist.re.kr', 'wjkimrocks@gmail.com', 'yoonjuho@kist.re.kr', 'yoonjuho@hanyang.ac.kr', 'kimth@kist.re.kr', 'skong@kist.re.kr', 'kyulikim@kist.re.kr', 'gold@kist.re.kr', 'wyl4493@kist.re.kr', 'SJ1@kist.re.kr', 'syson@kist.re.kr', 'hyejae@kist.re.kr', 'minivy@gmail.com', 'zest.woosung@gmail.com', 'jywon337@gmail.com', 'youngsungson@gmail.com', 'dcbaek@gmail.com', 'impos0108@gmail.com', 'jeongwon@pebblous.ai', 'yoyogo@gmail.com', 'young@ibs.re.kr']",
-        "[deliver] 제9강 done 기록.",
-        "     오디오 첨부 15.6MB",
-        "  4) 메일 발송",
-        "[error] 제10강 처리 실패: URLError(BrokenPipeError(32, 'Broken pipe')) — 다음 강 계속"
-      ]
+      "path": null,
+      "age_seconds": null,
+      "tail": []
     }
   },
   "processes": {
@@ -120,10 +111,6 @@
     "watchdog": []
   },
   "events": [
-    {
-      "time": "2026-07-10T05:04:36.142012Z",
-      "message": "workflow=idle, current=schedule, target=L11"
-    },
     {
       "time": "2026-07-10T05:09:42.057772Z",
       "message": "workflow=idle, current=schedule, target=L11"
@@ -163,13 +150,13 @@
     {
       "time": "2026-07-10T05:55:33.239003Z",
       "message": "workflow=idle, current=schedule, target=L11"
+    },
+    {
+      "time": "2026-07-10T06:00:38.518737Z",
+      "message": "workflow=complete, current=ledger, target=LNone"
     }
   ],
   "ssh_history": [
-    {
-      "time": "2026-07-09T05:32:08.923855Z",
-      "status": "pass"
-    },
     {
       "time": "2026-07-09T05:37:14.546387Z",
       "status": "pass"
@@ -1316,6 +1303,10 @@
     },
     {
       "time": "2026-07-10T05:55:33.239003Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-10T06:00:38.518737Z",
       "status": "pass"
     }
   ]

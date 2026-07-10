@@ -21,7 +21,15 @@ import urllib.request
 from pathlib import Path
 
 SESS_DIR = Path(os.environ.get("GJC_SESS_DIR", str(Path.home() / ".gjc" / "agent" / "sessions")))
-ENDPOINT = os.environ.get("PC_GJC_USAGE_ENDPOINT", "http://localhost:4318/gjc/usage")
+ENDPOINTS = [
+    e.strip()
+    for e in os.environ.get(
+        "PC_GJC_USAGE_ENDPOINTS",
+        os.environ.get("PC_GJC_USAGE_ENDPOINT", "http://localhost:4318/gjc/usage"),
+    ).split(",")
+    if e.strip()
+]
+TOKEN_FILE = Path(os.environ.get("PC_GJC_USAGE_TOKEN_FILE", str(Path.home() / "pc_agent" / "otel" / "usage_token")))
 STATE = Path(os.environ.get("GJC_REPORTER_STATE", str(Path.home() / "pc_agent" / "otel" / "gjc_reporter_state.json")))
 BIN_SECONDS = 300
 BACKFILL_SECONDS = 12 * 3600  # on first run, only backfill sessions touched within this window
@@ -51,16 +59,28 @@ def save_state(s: dict) -> None:
     tmp.replace(STATE)
 
 
+def _usage_token():
+    try:
+        return TOKEN_FILE.read_text().strip()
+    except Exception:
+        return None
+
+
 def post(rec: dict) -> bool:
     data = json.dumps(rec).encode("utf-8")
-    req = urllib.request.Request(ENDPOINT, data=data, headers={"Content-Type": "application/json"}, method="POST")
-    try:
-        with urllib.request.urlopen(req, timeout=10) as r:
-            r.read()
-        return True
-    except Exception as e:
-        print("post fail:", e, flush=True)
-        return False
+    headers = {"Content-Type": "application/json"}
+    token = _usage_token()
+    if token:
+        headers["X-Usage-Token"] = token
+    for endpoint in ENDPOINTS:
+        req = urllib.request.Request(endpoint, data=data, headers=headers, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=10) as r:
+                r.read()
+            return True
+        except Exception as e:
+            print(f"post fail ({endpoint}):", e, flush=True)
+    return False
 
 
 def to_seconds(ts) -> float:

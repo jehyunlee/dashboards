@@ -68,7 +68,7 @@ def _usage_token():
 
 def post(rec: dict) -> bool:
     data = json.dumps(rec).encode("utf-8")
-    headers = {"Content-Type": "application/json"}
+    headers = {"Content-Type": "application/json", "User-Agent": "gjc-usage-reporter/1.0"}
     token = _usage_token()
     if token:
         headers["X-Usage-Token"] = token

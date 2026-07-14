@@ -1,7 +1,7 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-14T06:07:26.903005Z",
-  "overall": "warn",
+  "updated_at": "2026-07-14T06:12:32.311350Z",
+  "overall": "ok",
   "summary": "모든 예약 작업이 끝났습니다.",
   "checks": {
     "ssh": {
@@ -9,12 +9,12 @@
       "detail": "Local SSH daemon check only: 127.0.0.1:22 is listening on the Mac mini."
     },
     "digest": {
-      "status": "warn",
-      "detail": "67298       07:23   0:00.03   0.0 S    /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --due"
+      "status": "ok",
+      "detail": "No lecture digest currently running."
     },
     "watchdog": {
-      "status": "warn",
-      "detail": "Digest is running but watchdog process is not visible between interval checks."
+      "status": "ok",
+      "detail": "Watchdog launchd installed; interval job may be idle between checks."
     }
   },
   "workflow": {
@@ -27,7 +27,7 @@
       "title": "all complete",
       "scheduled_at": null,
       "overdue_minutes": 0,
-      "running": true
+      "running": false
     },
     "last_completed": {
       "lecture": 11,
@@ -107,16 +107,10 @@
     }
   },
   "processes": {
-    "digest": [
-      "67298       07:23   0:00.03   0.0 S    /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --due"
-    ],
+    "digest": [],
     "watchdog": []
   },
   "events": [
-    {
-      "time": "2026-07-14T05:16:33.107148Z",
-      "message": "workflow=complete, current=ledger, target=LNone"
-    },
     {
       "time": "2026-07-14T05:21:38.682192Z",
       "message": "workflow=complete, current=ledger, target=LNone"
@@ -156,13 +150,13 @@
     {
       "time": "2026-07-14T06:07:26.903005Z",
       "message": "workflow=complete, current=ledger, target=LNone"
+    },
+    {
+      "time": "2026-07-14T06:12:32.311350Z",
+      "message": "workflow=complete, current=ledger, target=LNone"
     }
   ],
   "ssh_history": [
-    {
-      "time": "2026-07-13T05:45:26.021663Z",
-      "status": "pass"
-    },
     {
       "time": "2026-07-13T05:50:31.369156Z",
       "status": "pass"
@@ -1309,6 +1303,10 @@
     },
     {
       "time": "2026-07-14T06:07:26.903005Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-14T06:12:32.311350Z",
       "status": "pass"
     }
   ]

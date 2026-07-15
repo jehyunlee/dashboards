@@ -1,6 +1,6 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-15T20:02:43.552807Z",
+  "updated_at": "2026-07-15T20:07:49.024542Z",
   "overall": "warn",
   "summary": "모든 예약 작업이 끝났습니다.",
   "checks": {
@@ -10,7 +10,7 @@
     },
     "digest": {
       "status": "warn",
-      "detail": "73490       02:43   0:00.03   0.0 S    /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --due"
+      "detail": "73490       07:49   0:00.03   0.0 S    /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --due"
     },
     "watchdog": {
       "status": "warn",
@@ -108,15 +108,11 @@
   },
   "processes": {
     "digest": [
-      "73490       02:43   0:00.03   0.0 S    /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --due"
+      "73490       07:49   0:00.03   0.0 S    /opt/homebrew/Caskroom/miniforge/base/envs/py312/bin/python pipeline/agent_lecture_digest.py --due"
     ],
     "watchdog": []
   },
   "events": [
-    {
-      "time": "2026-07-15T19:11:49.553993Z",
-      "message": "workflow=complete, current=ledger, target=LNone"
-    },
     {
       "time": "2026-07-15T19:16:55.019263Z",
       "message": "workflow=complete, current=ledger, target=LNone"
@@ -156,13 +152,13 @@
     {
       "time": "2026-07-15T20:02:43.552807Z",
       "message": "workflow=complete, current=ledger, target=LNone"
+    },
+    {
+      "time": "2026-07-15T20:07:49.024542Z",
+      "message": "workflow=complete, current=ledger, target=LNone"
     }
   ],
   "ssh_history": [
-    {
-      "time": "2026-07-14T19:41:52.955970Z",
-      "status": "pass"
-    },
     {
       "time": "2026-07-14T19:46:58.630212Z",
       "status": "pass"
@@ -1309,6 +1305,10 @@
     },
     {
       "time": "2026-07-15T20:02:43.552807Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-15T20:07:49.024542Z",
       "status": "pass"
     }
   ]

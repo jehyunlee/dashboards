@@ -1,6 +1,6 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-27T07:11:31.208858Z",
+  "updated_at": "2026-07-27T07:16:36.853642Z",
   "overall": "ok",
   "summary": "모든 예약 작업이 끝났습니다.",
   "checks": {
@@ -112,10 +112,6 @@
   },
   "events": [
     {
-      "time": "2026-07-27T06:20:36.561291Z",
-      "message": "workflow=complete, current=ledger, target=LNone"
-    },
-    {
       "time": "2026-07-27T06:25:41.763997Z",
       "message": "workflow=complete, current=ledger, target=LNone"
     },
@@ -154,13 +150,13 @@
     {
       "time": "2026-07-27T07:11:31.208858Z",
       "message": "workflow=complete, current=ledger, target=LNone"
+    },
+    {
+      "time": "2026-07-27T07:16:36.853642Z",
+      "message": "workflow=complete, current=ledger, target=LNone"
     }
   ],
   "ssh_history": [
-    {
-      "time": "2026-07-26T06:50:47.099632Z",
-      "status": "pass"
-    },
     {
       "time": "2026-07-26T06:55:52.357054Z",
       "status": "pass"
@@ -1307,6 +1303,10 @@
     },
     {
       "time": "2026-07-27T07:11:31.208858Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-27T07:16:36.853642Z",
       "status": "pass"
     }
   ]

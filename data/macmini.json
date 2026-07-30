@@ -1,6 +1,6 @@
 {
   "host": "jehyun-macmini2026",
-  "updated_at": "2026-07-30T20:07:26.211279Z",
+  "updated_at": "2026-07-30T20:12:32.611290Z",
   "overall": "ok",
   "summary": "모든 예약 작업이 끝났습니다.",
   "checks": {
@@ -108,15 +108,9 @@
   },
   "processes": {
     "digest": [],
-    "watchdog": [
-      "99663       00:00   0:00.03   0.0 R    /Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/Resources/Python.app/Contents/MacOS/Python /Users/jehyunlee/pc_agent/dashun_wang/agent_lecture_watchdog.py"
-    ]
+    "watchdog": []
   },
   "events": [
-    {
-      "time": "2026-07-30T19:16:24.132075Z",
-      "message": "workflow=complete, current=ledger, target=LNone"
-    },
     {
       "time": "2026-07-30T19:21:30.363772Z",
       "message": "workflow=complete, current=ledger, target=LNone"
@@ -156,13 +150,13 @@
     {
       "time": "2026-07-30T20:07:26.211279Z",
       "message": "workflow=complete, current=ledger, target=LNone"
+    },
+    {
+      "time": "2026-07-30T20:12:32.611290Z",
+      "message": "workflow=complete, current=ledger, target=LNone"
     }
   ],
   "ssh_history": [
-    {
-      "time": "2026-07-29T19:40:16.321394Z",
-      "status": "pass"
-    },
     {
       "time": "2026-07-29T19:45:22.675371Z",
       "status": "pass"
@@ -1309,6 +1303,10 @@
     },
     {
       "time": "2026-07-30T20:07:26.211279Z",
+      "status": "pass"
+    },
+    {
+      "time": "2026-07-30T20:12:32.611290Z",
       "status": "pass"
     }
   ]

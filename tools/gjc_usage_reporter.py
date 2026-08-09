@@ -12,15 +12,23 @@ This reporter scans the session files, aggregates NEW assistant-message usage in
 (subscription bucket -> usage_local.json). Provider anthropic -> Claude Code 구독,
 openai -> Codex 구독. Per-file byte offsets are tracked to avoid double counting;
 append-only session files make offset tracking safe.
+
+Only providers whose gjc credential (~/.gjc/agent/agent.db) is an active,
+non-disabled OAuth login are reported. When gjc falls back to an API key
+(e.g. after an OAuth refresh failure), that traffic is metered API billing and
+already visible through the provider Admin API series; reporting it here again
+would double-display the same tokens as 구독 usage.
 """
 import glob
 import json
 import os
+import sqlite3
 import time
 import urllib.request
 from pathlib import Path
 
 SESS_DIR = Path(os.environ.get("GJC_SESS_DIR", str(Path.home() / ".gjc" / "agent" / "sessions")))
+GJC_DB = Path(os.environ.get("GJC_AGENT_DB", str(Path.home() / ".gjc" / "agent" / "agent.db")))
 ENDPOINTS = [
     e.strip()
     for e in os.environ.get(
@@ -34,6 +42,8 @@ STATE = Path(os.environ.get("GJC_REPORTER_STATE", str(Path.home() / "pc_agent" /
 BIN_SECONDS = 300
 BACKFILL_SECONDS = 12 * 3600  # on first run, only backfill sessions touched within this window
 PROVIDERS = {"anthropic", "openai"}  # 구독 rows: anthropic=Claude Code, openai=Codex
+# dashboard provider id -> gjc credential provider names in auth_credentials
+CRED_PROVIDERS = {"anthropic": ("anthropic",), "openai": ("openai-codex", "openai")}
 
 
 def normalize_provider(provider: str):
@@ -43,6 +53,32 @@ def normalize_provider(provider: str):
     if provider == "openai" or provider.startswith("openai-") or provider in {"codex", "openai-codex"}:
         return "openai"
     return None
+
+
+def active_subscription_providers():
+    """Dashboard provider ids whose gjc credential is an active OAuth login.
+
+    Returns None when the credential DB is unreadable (fail open: keep the
+    pre-existing report-everything behavior instead of silently dropping
+    genuine subscription usage).
+    """
+    try:
+        db = sqlite3.connect(f"file:{GJC_DB}?mode=ro", uri=True)
+        try:
+            rows = db.execute(
+                "SELECT provider, credential_type, disabled_cause FROM auth_credentials"
+            ).fetchall()
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"gjc_usage_reporter: cannot read auth state ({e}); reporting all providers", flush=True)
+        return None
+    active = set()
+    for provider, cred_type, disabled_cause in rows:
+        for dash_id, names in CRED_PROVIDERS.items():
+            if provider in names and cred_type == "oauth" and not disabled_cause:
+                active.add(dash_id)
+    return active
 
 
 def load_state() -> dict:
@@ -100,6 +136,11 @@ def main() -> None:
     first_run = not bool(offsets)
     cutoff = time.time() - BACKFILL_SECONDS
     files = glob.glob(str(SESS_DIR / "**" / "*.jsonl"), recursive=True)
+    active = active_subscription_providers()
+    if active is not None:
+        skipped = sorted(PROVIDERS - active)
+        if skipped:
+            print(f"gjc_usage_reporter: skipping non-subscription auth providers: {', '.join(skipped)}", flush=True)
 
     agg: dict = {}  # (bstart, provider) -> {input,output,cacheRead,cacheCreation}
     for f in files:
@@ -143,6 +184,11 @@ def main() -> None:
                 continue
             prov = normalize_provider(str(m.get("provider", "")))
             if prov not in PROVIDERS:
+                continue
+            if active is not None and prov not in active:
+                # API-key or disabled OAuth: billed as metered API and already
+                # visible via the provider Admin API series. Never post it to
+                # the subscription bucket.
                 continue
             u = m.get("usage") or {}
             inp = int(u.get("input") or 0)

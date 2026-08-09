@@ -62,6 +62,8 @@ ANTHROPIC_ADMIN_KEY=sk-ant-admin-...
 GOOGLE_API_KEY=AIza...
 ```
 
+`ANTHROPIC_API_KEY`와 `OPENAI_API_KEY`를 `.zshenv`/`.zshrc`에서 전역 export하지 마세요. Claude Code와 Codex는 환경변수의 API key를 OAuth 구독 인증보다 우선하므로, CLI 사용량이 종량제 API로 과금되고 구독 telemetry와 중복 표시됩니다. API 작업에는 `keys.env`를 해당 프로세스에서만 명시적으로 읽히고, CLI 인증은 `claude auth status` 등으로 `subscriptionType`이 표시되는지 확인합니다.
+
 지원하는 별칭:
 
 - OpenAI: `OPENAI_API_KEY`, `openai_key`

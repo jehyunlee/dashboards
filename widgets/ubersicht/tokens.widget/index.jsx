@@ -1,5 +1,5 @@
 const DATA_URL = 'https://raw.githubusercontent.com/jehyunlee/dashboards/data/data/tokens.json';
-const VISIBLE = 24;
+const VISIBLE = 288;
 const STALE_MS = 30 * 60 * 1000;
 const WIDGET_ANCHOR_X = 'right';
 const WIDGET_ANCHOR_Y = 'bottom';
@@ -118,7 +118,7 @@ function seriesTotal(series) {
 
 function Spark({ series }) {
   const points = seriesPoints(series);
-  if (!points.length) return <p className="note">최근 6시간 사용 표본 없음</p>;
+  if (!points.length) return <p className="note">최근 24시간 사용 표본 없음</p>;
 
   const values = points.map((p) => Number(p.tokens) || 0);
   const max = Math.max(1, ...values);
@@ -149,9 +149,9 @@ function ProviderCard({ provider: p }) {
         <div className="metric"><span>30d API</span><b>{fmtCompact(usage.total_tokens)} tokens</b></div>
         <div className="metric"><span>Cost</span><b>{fmtMoney(billing.month_to_date_cost)}</b></div>
       </div>
-      <div className="metric"><span>API 6h</span><b>{fmtCompact(seriesTotal(p.usage_series))} tokens</b></div>
+      <div className="metric"><span>API 24h</span><b>{fmtCompact(seriesTotal(p.usage_series))} tokens</b></div>
       <Spark series={p.usage_series} />
-      {hasSub ? <div className="metric"><span>CLI subscription 6h</span><b>{fmtCompact(seriesTotal(p.subscription_series))} tokens</b></div> : null}
+      {hasSub ? <div className="metric"><span>CLI subscription 24h</span><b>{fmtCompact(seriesTotal(p.subscription_series))} tokens</b></div> : null}
       {hasSub ? <Spark series={p.subscription_series} /> : null}
     </article>
   );

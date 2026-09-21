@@ -295,14 +295,14 @@ struct MatrixDashboard: View {
 
             MatrixMetricRow(
                 title: "구독 토큰",
-                subtitle: "6h 누적",
+                subtitle: "24h 누적",
                 providers: visibleProviders,
                 labelWidth: labelWidth,
                 cellSpacing: cellSpacing
             ) { provider in
                 UsageCell(
                     value: subscriptionValue(provider),
-                    detail: provider.id == "gemini" ? "—" : "6h",
+                    detail: provider.id == "gemini" ? "—" : "24h",
                     points: usageValues(provider.subscriptionSeries, count: tickCount),
                     tint: providerTint(for: provider.id),
                     emptyText: provider.id == "gemini" ? "구독 없음" : "0"
@@ -311,14 +311,14 @@ struct MatrixDashboard: View {
 
             MatrixMetricRow(
                 title: "API 토큰",
-                subtitle: "6h 누적",
+                subtitle: "24h 누적",
                 providers: visibleProviders,
                 labelWidth: labelWidth,
                 cellSpacing: cellSpacing
             ) { provider in
                 UsageCell(
                     value: usageValue(provider.usageSeries),
-                    detail: "6h",
+                    detail: "24h",
                     points: usageValues(provider.usageSeries, count: tickCount),
                     tint: providerTint(for: provider.id),
                     emptyText: "0"
@@ -599,7 +599,7 @@ struct ProviderTokenWidgetView: View {
             ProviderMetricRow(
                 title: "구독토큰사용",
                 value: subscriptionValue(provider),
-                detail: provider.id == "gemini" ? "구독 없음" : "6h 누적",
+                detail: provider.id == "gemini" ? "구독 없음" : "24h 누적",
                 tint: subscriptionTint,
                 compact: compact,
                 spacious: spacious
@@ -614,7 +614,7 @@ struct ProviderTokenWidgetView: View {
             ProviderMetricRow(
                 title: "API토큰사용",
                 value: usageValue(provider.usageSeries),
-                detail: "6h 누적",
+                detail: "24h 누적",
                 tint: tint,
                 compact: compact,
                 spacious: spacious

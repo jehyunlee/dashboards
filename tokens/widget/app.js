@@ -1,6 +1,6 @@
 const SNAP_SAME = '../../data/tokens.json';
 const SNAP_RAW = 'https://raw.githubusercontent.com/jehyunlee/dashboards/data/data/tokens.json';
-const VISIBLE = 36;
+const VISIBLE = 288;
 const $ = (id) => document.getElementById(id);
 
 function ageMs(iso){ const t = Date.parse(iso || ''); return Number.isFinite(t) ? Date.now() - t : Infinity; }
@@ -35,7 +35,7 @@ async function newestOf(urls){
 
 function spark(series){
   const points = lastN((series && series.available && series.points) ? series.points : [], VISIBLE);
-  if(!points.length) return '<p class="note">최근 6시간 사용 표본 없음</p>';
+  if(!points.length) return '<p class="note">최근 24시간 사용 표본 없음</p>';
   const vals = points.map(p => Number(p.tokens) || 0);
   const max = Math.max(1, ...vals);
   return `<div class="spark">${points.map((p, i) => {
@@ -52,8 +52,8 @@ function seriesTotal(series){
 function renderProvider(p){
   const billing = p.billing || {};
   const usage = billing.usage || {};
-  const api6h = seriesTotal(p.usage_series);
-  const sub6h = seriesTotal(p.subscription_series);
+  const api24h = seriesTotal(p.usage_series);
+  const sub24h = seriesTotal(p.subscription_series);
   const hasSub = p.id !== 'gemini' && p.subscription_series;
   const cost = billing.month_to_date_cost;
   const status = cls(p.status);
@@ -66,9 +66,9 @@ function renderProvider(p){
       <div class="metric"><span>30d API</span><b>${fmtCompact(usage.total_tokens)} tokens</b></div>
       <div class="metric"><span>Cost</span><b>${fmtMoney(cost)}</b></div>
     </div>
-    <div class="metric"><span>API 6h</span><b>${fmtCompact(api6h)} tokens</b></div>
+    <div class="metric"><span>API 24h</span><b>${fmtCompact(api24h)} tokens</b></div>
     ${spark(p.usage_series)}
-    ${hasSub ? `<div class="metric"><span>CLI subscription 6h</span><b>${fmtCompact(sub6h)} tokens</b></div>${spark(p.subscription_series)}` : ''}
+    ${hasSub ? `<div class="metric"><span>CLI subscription 24h</span><b>${fmtCompact(sub24h)} tokens</b></div>${spark(p.subscription_series)}` : ''}
   </article>`;
 }
 

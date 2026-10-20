@@ -141,15 +141,12 @@ function renderProvider(p, samples){
   const subS = (p.subscription_series && p.subscription_series.available) ? p.subscription_series : null;
   const sub = seriesBars(subS);
   const subConfigured = !!(p.subscription_series);
-  const geminiEol = p.id === 'gemini';
   const subMeta = sub
     ? `최근 24h ${fmtCompact(sub.total)} tokens${subS.window_cost ? ' · $'+subS.window_cost : ''}`
-    : (geminiEol ? '개인 CLI 티어 종료' : (subConfigured ? '최근 24h 사용 없음' : '텔레메트리 미설정'));
+    : (subConfigured ? '최근 24h 사용 없음' : '텔레메트리 미설정');
   const subChart = sub
     ? sub.html
-    : `<p class="nodata">${geminiEol
-        ? 'Gemini 개인 CLI 구독 종료 (Google → Antigravity 이전) · 구독 사용량 소스 없음'
-        : (subConfigured ? '최근 24시간 구독 사용 없음 (Claude Code/Codex OTel 대기 중)' : '구독 텔레메트리 미설정 — 이 provider는 CLI 구독 사용량이 없음')}</p>`;
+    : `<p class="nodata">${subConfigured ? '최근 24시간 구독 사용 없음 (Claude Code/Codex/Gemini OTel 대기 중)' : '구독 텔레메트리 미설정 — 이 provider는 CLI 구독 사용량이 없음'}</p>`;
 
   const apiS = (p.usage_series && p.usage_series.available) ? p.usage_series : null;
   const api = seriesBars(apiS);
@@ -162,15 +159,12 @@ function renderProvider(p, samples){
     ? api.html
     : `<p class="nodata">${apiS ? '최근 24시간 API(종량제) 사용 없음' : 'API usage admin API 미연결'}</p>`;
 
-  // Gemini has no usable subscription CLI (Google discontinued the individual
-  // gemini CLI tier), so its panel shows only connection + metered API usage.
-  const showSub = p.id !== 'gemini';
-  const subLabel = p.id === 'openai' ? 'Codex 구독 토큰 사용량' : p.id === 'anthropic' ? 'Claude Code 구독 토큰 사용량' : '구독 토큰 사용량';
-  const subBlock = showSub ? `
+  const subLabel = p.id === 'openai' ? 'Codex 구독 토큰 사용량' : p.id === 'anthropic' ? 'Claude Code 구독 토큰 사용량' : 'Gemini 구독 토큰 사용량';
+  const subBlock = `
     <div class="series">
       <div class="series-head"><span>${subLabel} · 5분</span><em>${escapeHtml(subMeta)}</em></div>
       ${subChart}
-    </div>` : '';
+    </div>`;
   return `<article class="card provider provider-${escapeHtml(p.id)}">
     <div class="card-head"><h3>${escapeHtml(p.label || p.id)}</h3><span class="badge ${cls(p.status)}">${escapeHtml(statusText(p.status))}</span></div>${subBlock}
     <div class="series">

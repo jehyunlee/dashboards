@@ -82,7 +82,7 @@ function renderProvider(p){
   const usage = billing.usage || {};
   const api24h = seriesTotal(p.usage_series);
   const sub24h = seriesTotal(p.subscription_series);
-  const hasSub = p.id !== 'gemini' && p.subscription_series;
+  const hasSub = !!p.subscription_series;
   const cost = billing.month_to_date_cost;
   const status = cls(p.status);
   return `<article class="provider provider-${escapeHtml(p.id)}">

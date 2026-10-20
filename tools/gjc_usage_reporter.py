@@ -55,21 +55,30 @@ BIN_SECONDS = 300
 SPAN_MINUTES = 24 * 60
 BACKFILL_SECONDS = 30 * 86400  # 30 days for 30d billing + 24h series
 RETENTION_SECONDS = 31 * 86400
-SUB_PROVIDERS = {"anthropic", "openai"}
-ALL_PROVIDERS = {"anthropic", "openai", "gemini"}
-CRED_PROVIDERS = {"anthropic": ("anthropic",), "openai": ("openai-codex", "openai")}
+GEMINI_CLI_DIR = Path(os.environ.get("GEMINI_CLI_DIR", str(Path.home() / ".gemini" / "tmp")))
+SUB_PROVIDERS = {"anthropic", "openai", "gemini_sub"}
+ALL_PROVIDERS = {"anthropic", "openai", "gemini", "gemini_sub"}
+CRED_PROVIDERS = {
+    "anthropic": ("anthropic",),
+    "openai": ("openai-codex", "openai"),
+    "gemini_sub": ("google-antigravity", "google-gemini-cli", "google"),
+}
 
 
-def normalize_provider(provider: str) -> str | None:
+def normalize_provider(provider: str, api: str = "", active: set[str] | None = None) -> str | None:
     p = (provider or "").lower().strip()
+    a = (api or "").lower().strip()
     if p == "anthropic" or p.startswith("anthropic-"):
         return "anthropic"
     if p == "openai" or p.startswith("openai-") or p in {"codex", "openai-codex"}:
         return "openai"
+    if p in {"google-antigravity", "google-gemini-cli"} or a == "google-gemini-cli":
+        return "gemini_sub"
     if p in {"google", "gemini"} or p.startswith("google-") or p.startswith("gemini-"):
+        if active is not None and "gemini_sub" in active and a != "google-generative-ai":
+            return "gemini_sub"
         return "gemini"
     return None
-
 
 def active_subscription_providers() -> set[str] | None:
     """Dashboard provider ids whose gjc credential is an active OAuth login."""
@@ -175,7 +184,8 @@ def write_local_otel_files(bins: dict[str, dict[str, Any]]) -> None:
                 },
             }
             if prov in SUB_PROVIDERS:
-                sub_bins.setdefault(bkey, {})[prov] = entry
+                out_prov = "gemini" if prov == "gemini_sub" else prov
+                sub_bins.setdefault(bkey, {})[out_prov] = entry
             elif prov == "gemini":
                 api_bins.setdefault(bkey, {})["gemini"] = entry
 
@@ -372,6 +382,7 @@ def publish_to_github_data(bins: dict[str, dict[str, Any]], now_dt: datetime) ->
 
     openai_sub = build_series_from_bins(bins, "openai", now_dt, sub_source)
     anthropic_sub = build_series_from_bins(bins, "anthropic", now_dt, sub_source)
+    gemini_sub = build_series_from_bins(bins, "gemini_sub", now_dt, sub_source)
     gemini_api = build_series_from_bins(bins, "gemini", now_dt, gem_source)
     gemini_billing = build_gemini_30d_billing(bins, now_dt.timestamp())
 
@@ -404,6 +415,14 @@ def publish_to_github_data(bins: dict[str, dict[str, Any]], now_dt: datetime) ->
                 p["usage_series"] = expanded_api
                 cached_api_series[pid] = expanded_api
         elif pid == "gemini":
+            cur_sub = p.get("subscription_series") or {}
+            if (
+                int(cur_sub.get("window_tokens") or 0) < int(gemini_sub["window_tokens"])
+                or len(cur_sub.get("points") or []) < 288
+            ):
+                need_tokens_patch = True
+            p["subscription_series"] = merge_series_points(cur_sub, gemini_sub)
+
             cur_api = p.get("usage_series") or {}
             if (
                 int(cur_api.get("window_tokens") or 0) < int(gemini_api["window_tokens"])
@@ -420,6 +439,7 @@ def publish_to_github_data(bins: dict[str, dict[str, Any]], now_dt: datetime) ->
         return (
             ((pr.get("openai") or {}).get("subscription_series") or {}).get("window_tokens"),
             ((pr.get("anthropic") or {}).get("subscription_series") or {}).get("window_tokens"),
+            ((pr.get("gemini") or {}).get("subscription_series") or {}).get("window_tokens"),
             ((pr.get("gemini") or {}).get("usage_series") or {}).get("window_tokens"),
             (((pr.get("gemini") or {}).get("billing") or {}).get("usage") or {}).get("total_tokens"),
         )
@@ -440,6 +460,7 @@ def publish_to_github_data(bins: dict[str, dict[str, Any]], now_dt: datetime) ->
             },
             "gemini": {
                 "billing": gemini_billing,
+                "subscription_series": gemini_sub,
                 "usage_series": gemini_api,
             },
         },
@@ -543,10 +564,10 @@ def main() -> None:
             m = e.get("message") or {}
             if m.get("role") != "assistant":
                 continue
-            prov = normalize_provider(str(m.get("provider", "")))
+            prov = normalize_provider(str(m.get("provider", "")), str(m.get("api", "")), active)
             if prov not in ALL_PROVIDERS:
                 continue
-            if prov in SUB_PROVIDERS and active is not None and prov not in active:
+            if prov in {"anthropic", "openai"} and active is not None and prov not in active:
                 continue
             u = m.get("usage") or {}
             inp = int(u.get("input") or 0)
@@ -572,6 +593,67 @@ def main() -> None:
             d["cacheRead"] = int(d.get("cacheRead") or 0) + cr
             d["cacheCreation"] = int(d.get("cacheCreation") or 0) + cw
             d["cost"] = round(float(d.get("cost") or 0.0) + cost_val, 6)
+            new_records += 1
+
+    # Also scan Gemini CLI (~/.gemini/tmp/**/chats/session-*.jsonl) OAuth subscription logs
+    for gf in glob.glob(str(GEMINI_CLI_DIR / "**" / "chats" / "session-*.jsonl"), recursive=True):
+        try:
+            gsize = os.path.getsize(gf)
+            gmtime = os.path.getmtime(gf)
+        except OSError:
+            continue
+        goff = offsets.get(gf)
+        if goff is None:
+            if first_run and gmtime < cutoff:
+                next_offsets[gf] = gsize
+                continue
+            goff = 0
+        if goff > gsize:
+            goff = 0
+        if goff >= gsize:
+            continue
+        try:
+            with open(gf, "rb") as fh:
+                fh.seek(goff)
+                gdata = fh.read()
+        except OSError:
+            continue
+        glast_nl = gdata.rfind(b"\n")
+        if glast_nl < 0:
+            continue
+        gchunk = gdata[: glast_nl + 1]
+        next_offsets[gf] = goff + len(gchunk)
+        for gline in gchunk.split(b"\n"):
+            gline = gline.strip()
+            if not gline or b"\"gemini\"" not in gline:
+                continue
+            try:
+                ge = json.loads(gline)
+            except Exception:
+                continue
+            if not isinstance(ge, dict) or ge.get("type") != "gemini":
+                continue
+            gtok = ge.get("tokens") or {}
+            if not isinstance(gtok, dict):
+                continue
+            ginp = int(gtok.get("input") or 0)
+            gout = int(gtok.get("output") or 0) + int(gtok.get("thoughts") or 0)
+            gcr = int(gtok.get("cached") or 0)
+            gtot = ginp + gout + gcr
+            if gtot <= 0:
+                continue
+            gsec = to_seconds(ge.get("timestamp"))
+            if gsec < cutoff:
+                continue
+            gbstart = int(gsec // BIN_SECONDS) * BIN_SECONDS
+            gbmap = bins.setdefault(str(gbstart), {})
+            gd = gbmap.setdefault(
+                "gemini_sub",
+                {"input": 0, "output": 0, "cacheRead": 0, "cacheCreation": 0, "cost": 0.0, "sent_tokens": 0},
+            )
+            gd["input"] = int(gd.get("input") or 0) + ginp
+            gd["output"] = int(gd.get("output") or 0) + gout
+            gd["cacheRead"] = int(gd.get("cacheRead") or 0) + gcr
             new_records += 1
 
     # Prune bins older than RETENTION_SECONDS
@@ -625,7 +707,8 @@ def main() -> None:
                     "cacheRead": int(d.get("cacheRead") or 0),
                     "cacheCreation": int(d.get("cacheCreation") or 0),
                 }
-                if post_with_circuit_breaker({"provider": prov, "by_type": bt, "ts": bstart}, ENDPOINTS, dead_sub):
+                out_prov = "gemini" if prov == "gemini_sub" else prov
+                if post_with_circuit_breaker({"provider": out_prov, "by_type": bt, "ts": bstart}, ENDPOINTS, dead_sub):
                     d["sent_tokens"] = tot
                     posted += 1
             elif prov == "gemini":

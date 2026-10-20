@@ -374,10 +374,10 @@ struct MatrixDashboard: View {
             ) { provider in
                 UsageCell(
                     value: subscriptionValue(provider),
-                    detail: provider.id == "gemini" ? "—" : "24h",
+                    detail: "24h",
                     points: usageValues(provider.subscriptionSeries, count: tickCount),
                     tint: providerTint(for: provider.id),
-                    emptyText: provider.id == "gemini" ? "구독 없음" : "0"
+                    emptyText: "0"
                 )
             }
 
@@ -663,7 +663,7 @@ struct ProviderTokenWidgetView: View {
         let snapshot = entry.snapshot
         let provider = providerStatus(providerID, snapshot: snapshot)
         let tint = providerTint(for: provider.id)
-        let subscriptionTint = provider.id == "gemini" ? Color.secondary : tint
+        let subscriptionTint = tint
 
         VStack(alignment: .leading, spacing: spacious ? 12 : (compact ? 6 : 8)) {
             providerHeader(provider: provider, snapshot: snapshot)
@@ -671,7 +671,7 @@ struct ProviderTokenWidgetView: View {
             ProviderMetricRow(
                 title: "구독토큰사용",
                 value: subscriptionValue(provider),
-                detail: provider.id == "gemini" ? "구독 없음" : "24h 누적",
+                detail: "24h 누적",
                 tint: subscriptionTint,
                 compact: compact,
                 spacious: spacious
@@ -679,7 +679,7 @@ struct ProviderTokenWidgetView: View {
                 UsageBars(
                     values: usageValues(provider.subscriptionSeries, count: providerTickCount(for: family)),
                     tint: subscriptionTint,
-                    emptyText: provider.id == "gemini" ? "구독 없음" : "0"
+                    emptyText: "0"
                 )
             }
 
@@ -869,7 +869,7 @@ private extension TokenSnapshot {
         providers: [
             ProviderStatus(id: "openai", label: "OpenAI", status: "tracking", billing: Billing(monthToDateCost: 23.93, usage: BillingUsage(totalTokens: 17_300_000)), usageSeries: UsageSeries(available: true, points: placeholderPoints(seed: 2)), subscriptionSeries: UsageSeries(available: true, points: placeholderPoints(seed: 5)), tokenWindow: nil),
             ProviderStatus(id: "anthropic", label: "Anthropic", status: "tracking", billing: Billing(monthToDateCost: 14582, usage: BillingUsage(totalTokens: 21_200_000)), usageSeries: UsageSeries(available: true, points: placeholderPoints(seed: 4)), subscriptionSeries: UsageSeries(available: true, points: placeholderPoints(seed: 9)), tokenWindow: nil),
-            ProviderStatus(id: "gemini", label: "Gemini", status: "tracking", billing: nil, usageSeries: UsageSeries(available: true, points: placeholderPoints(seed: 1)), subscriptionSeries: nil, tokenWindow: nil)
+            ProviderStatus(id: "gemini", label: "Gemini", status: "tracking", billing: nil, usageSeries: UsageSeries(available: true, points: placeholderPoints(seed: 1)), subscriptionSeries: UsageSeries(available: true, points: placeholderPoints(seed: 3)), tokenWindow: nil)
         ]
     )
 
@@ -1003,7 +1003,7 @@ private func seriesTotal(_ series: UsageSeries?) -> Double? {
 }
 
 private func subscriptionValue(_ provider: ProviderStatus) -> String {
-    guard provider.id != "gemini", let total = seriesTotal(provider.subscriptionSeries) else { return "—" }
+    guard let total = seriesTotal(provider.subscriptionSeries) else { return "—" }
     return formatCompact(total)
 }
 

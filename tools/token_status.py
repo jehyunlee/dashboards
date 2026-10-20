@@ -607,6 +607,49 @@ def load_history() -> list[dict[str, Any]]:
         return []
 
 
+def merge_series_overlay(base: dict[str, Any] | None, over: dict[str, Any] | None) -> dict[str, Any] | None:
+    if not isinstance(over, dict) or not over.get("available"):
+        return base
+    if not isinstance(base, dict) or not base.get("available"):
+        return over
+    bmap = {str(p["t"]): int(p.get("tokens") or 0) for p in (base.get("points") or []) if isinstance(p, dict) and p.get("t")}
+    omap = {str(p["t"]): int(p.get("tokens") or 0) for p in (over.get("points") or []) if isinstance(p, dict) and p.get("t")}
+    grid = over.get("points") if len(over.get("points") or []) >= len(base.get("points") or []) else base.get("points")
+    pts = []
+    tot = 0
+    for p in grid or []:
+        t = str(p["t"])
+        v = max(bmap.get(t, 0), omap.get(t, 0))
+        pts.append({"t": t, "tokens": v})
+        tot += v
+    out = dict(base)
+    out.update(over)
+    out["points"] = pts
+    out["window_tokens"] = tot
+    out["window_cost"] = round(max(float(base.get("window_cost") or 0), float(over.get("window_cost") or 0)), 4)
+    return out
+
+
+def merge_macbook_overlay(providers: list[dict[str, Any]]) -> None:
+    mb_path = REPO / "data" / "gjc_macbook.json"
+    try:
+        mb = json.loads(mb_path.read_text(encoding="utf-8"))
+    except Exception:
+        return
+    mb_provs = (mb.get("providers") or {}) if isinstance(mb, dict) else {}
+    for p in providers:
+        pid = p.get("id")
+        mp = mb_provs.get(pid)
+        if not isinstance(mp, dict):
+            continue
+        if mp.get("subscription_series"):
+            p["subscription_series"] = merge_series_overlay(p.get("subscription_series"), mp["subscription_series"])
+        if mp.get("usage_series"):
+            p["usage_series"] = merge_series_overlay(p.get("usage_series"), mp["usage_series"])
+        if pid == "gemini" and isinstance(mp.get("billing"), dict) and mp["billing"].get("available"):
+            p["billing"] = mp["billing"]
+
+
 def main() -> None:
     keys = load_keys()
     updated = now_iso()
@@ -634,6 +677,7 @@ def main() -> None:
     run(["git", "config", "user.name", "Mac mini Token Status"], 10)
     run(["git", "config", "user.email", "tokens@jehyunlee.dev"], 10)
     run(["git", "pull", "--rebase", "origin", BRANCH], 60)
+    merge_macbook_overlay(providers)
     samples = load_history()
     samples.append(build_history_entry(providers, updated))
     samples = samples[-HISTORY_MAX:]

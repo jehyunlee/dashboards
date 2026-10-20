@@ -38,6 +38,7 @@ jobs:
           cp site-src/tokens/widget/index.html site-src/tokens/widget/app.js site-src/tokens/widget/style.css _site/tokens/widget/
           cp data-src/data/macmini.json data-src/data/tokens.json _site/data/
           cp data-src/data/tokens_history.json _site/data/ 2>/dev/null || true
+          cp data-src/data/gjc_macbook.json _site/data/ 2>/dev/null || true
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

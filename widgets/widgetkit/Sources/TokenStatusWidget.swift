@@ -3,6 +3,7 @@ import SwiftUI
 import WidgetKit
 
 private let tokenDataURL = URL(string: "https://raw.githubusercontent.com/jehyunlee/dashboards/data/data/tokens.json")!
+private let macbookDataURL = URL(string: "https://raw.githubusercontent.com/jehyunlee/dashboards/data/data/gjc_macbook.json")!
 private let tokenHistoryURL = URL(string: "https://raw.githubusercontent.com/jehyunlee/dashboards/data/data/tokens_history.json")!
 private let dashboardURL = URL(string: "https://tech.jehyunlee.dev/dashboards/tokens/")!
 private let providerOrder = ["openai", "anthropic", "gemini"]
@@ -68,6 +69,28 @@ struct SeriesPoint: Decodable, Identifiable {
     let t: String?
     let tokens: Double?
     var id: String { t ?? "point-\(tokens ?? 0)" }
+}
+
+struct MacbookOverlay: Decodable {
+    let updatedAt: String?
+    let providers: [String: MacbookProviderOverlay]?
+
+    enum CodingKeys: String, CodingKey {
+        case updatedAt = "updated_at"
+        case providers
+    }
+}
+
+struct MacbookProviderOverlay: Decodable {
+    let billing: Billing?
+    let usageSeries: UsageSeries?
+    let subscriptionSeries: UsageSeries?
+
+    enum CodingKeys: String, CodingKey {
+        case billing
+        case usageSeries = "usage_series"
+        case subscriptionSeries = "subscription_series"
+    }
 }
 
 struct TokenWindow: Decodable {
@@ -161,13 +184,62 @@ struct TokenProvider: TimelineProvider {
             switch snapshotResult {
             case .failure(let error):
                 completion(.failure(error))
-            case .success(let snapshot):
-                fetchJSON(TokenHistory.self, from: tokenHistoryURL) { historyResult in
-                    let history = (try? historyResult.get()) ?? TokenHistory(samples: [])
-                    completion(.success((snapshot: snapshot, history: history)))
+            case .success(let rawSnapshot):
+                fetchJSON(MacbookOverlay.self, from: macbookDataURL) { mbResult in
+                    let mb = try? mbResult.get()
+                    let snapshot = mergeOverlay(snapshot: rawSnapshot, overlay: mb)
+                    fetchJSON(TokenHistory.self, from: tokenHistoryURL) { historyResult in
+                        let history = (try? historyResult.get()) ?? TokenHistory(samples: [])
+                        completion(.success((snapshot: snapshot, history: history)))
+                    }
                 }
             }
         }
+    }
+
+    private func mergeSeries(_ base: UsageSeries?, _ over: UsageSeries?) -> UsageSeries? {
+        guard let over, over.available == true, let overPts = over.points, !overPts.isEmpty else { return base }
+        guard let base, base.available == true, let basePts = base.points, !basePts.isEmpty else { return over }
+        var bmap: [String: Double] = [:]
+        for p in basePts {
+            if let t = p.t { bmap[t] = max(bmap[t] ?? 0, p.tokens ?? 0) }
+        }
+        var omap: [String: Double] = [:]
+        for p in overPts {
+            if let t = p.t { omap[t] = max(omap[t] ?? 0, p.tokens ?? 0) }
+        }
+        let grid = overPts.count >= basePts.count ? overPts : basePts
+        let merged = grid.map { p -> SeriesPoint in
+            let t = p.t ?? ""
+            let v = max(bmap[t] ?? 0, omap[t] ?? 0)
+            return SeriesPoint(t: p.t, tokens: v)
+        }
+        return UsageSeries(available: true, points: merged)
+    }
+
+    private func mergeOverlay(snapshot: TokenSnapshot, overlay: MacbookOverlay?) -> TokenSnapshot {
+        guard let overlay, let mbProviders = overlay.providers else { return snapshot }
+        let mergedProviders = snapshot.providers.map { p -> ProviderStatus in
+            guard let mp = mbProviders[p.id] else { return p }
+            let sub = mergeSeries(p.subscriptionSeries, mp.subscriptionSeries)
+            let api = mergeSeries(p.usageSeries, mp.usageSeries)
+            let bill = (p.id == "gemini" && mp.billing != nil) ? mp.billing : p.billing
+            return ProviderStatus(
+                id: p.id,
+                label: p.label,
+                status: p.status,
+                billing: bill,
+                usageSeries: api,
+                subscriptionSeries: sub,
+                tokenWindow: p.tokenWindow
+            )
+        }
+        return TokenSnapshot(
+            updatedAt: overlay.updatedAt ?? snapshot.updatedAt,
+            overall: snapshot.overall,
+            summary: snapshot.summary,
+            providers: mergedProviders
+        )
     }
 
     private func fetchJSON<T: Decodable>(_ type: T.Type, from url: URL, completion: @escaping (Result<T, Error>) -> Void) {

@@ -1,32 +1,35 @@
 #!/usr/bin/env python3
-"""Report Gajae Code (gjc, https://github.com/Yeachan-Heo/gajae-code) subscription token usage to the local OTLP receiver.
+"""Report Gajae Code (gjc) token usage to the Mac mini receiver and GitHub data branch.
 
 Gajae Code persists every assistant message to session JSONL at
   ~/.gjc/agent/sessions/--<cwd>--/<ts>_<id>.jsonl
-Each `message` entry carries {provider, model, usage{input,output,cacheRead,cacheWrite}}.
-Account/OAuth-logged Gajae Code usage is subscription-billed but invisible to both the
-Claude Code OTel path and the org Admin API, so the dashboard's 구독 row misses it.
+Each `message` entry carries {provider, model, usage{input,output,cacheRead,cacheWrite,cost}}.
 
-This reporter scans the session files, aggregates NEW assistant-message usage into
-5-min bins by provider, and POSTs them to the receiver's /gjc/usage endpoint
-(subscription bucket -> usage_local.json). Provider anthropic -> Claude Code 구독,
-openai -> Codex 구독. Per-file byte offsets are tracked to avoid double counting;
-append-only session files make offset tracking safe.
+- anthropic / openai (active OAuth subscription): reported to subscription series
+  (Claude Code 구독 / Codex 구독)
+- google / gemini: reported to Gemini metered API usage_series + 30d billing
+  (since Google has no organization usage Admin API)
 
-Only providers whose gjc credential (~/.gjc/agent/agent.db) is an active,
-non-disabled OAuth login are reported. When gjc falls back to an API key
-(e.g. after an OAuth refresh failure), that traffic is metered API billing and
-already visible through the provider Admin API series; reporting it here again
-would double-display the same tokens as 구독 usage.
+Even when the Mac mini OTel receiver (usage.jehyunlee.dev / 100.114.66.16:4318)
+is unreachable, this script writes local OTel bin files and publishes
+`data/gjc_macbook.json` + merged `data/tokens.json` directly to the `data`
+branch of `jehyunlee/dashboards` so the live dashboard stays up to date.
 """
+from __future__ import annotations
+
 import glob
 import json
 import os
+import socket
 import sqlite3
+import subprocess
 import time
 import urllib.request
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from typing import Any
 
+SCHEMA_VERSION = 2
 SESS_DIR = Path(os.environ.get("GJC_SESS_DIR", str(Path.home() / ".gjc" / "agent" / "sessions")))
 GJC_DB = Path(os.environ.get("GJC_AGENT_DB", str(Path.home() / ".gjc" / "agent" / "agent.db")))
 ENDPOINTS = [
@@ -37,31 +40,39 @@ ENDPOINTS = [
     ).split(",")
     if e.strip()
 ]
+PC_ENDPOINTS = [
+    e.replace("/gjc/usage", "/pc/usage") if "/gjc/usage" in e else e
+    for e in ENDPOINTS
+]
 TOKEN_FILE = Path(os.environ.get("PC_GJC_USAGE_TOKEN_FILE", str(Path.home() / "pc_agent" / "otel" / "usage_token")))
 STATE = Path(os.environ.get("GJC_REPORTER_STATE", str(Path.home() / "pc_agent" / "otel" / "gjc_reporter_state.json")))
+OTEL_USAGE = Path(os.environ.get("PC_OTEL_USAGE", str(Path.home() / "pc_agent" / "otel" / "usage_local.json")))
+OTEL_USAGE_API = Path(os.environ.get("PC_OTEL_USAGE_API", str(Path.home() / "pc_agent" / "otel" / "usage_api_local.json")))
+DASHBOARD_DATA_REPO = Path(os.environ.get("DASHBOARD_REPO", str(Path.home() / "pc_agent" / "dashboards-data")))
+DASHBOARD_BRANCH = os.environ.get("DASHBOARD_BRANCH", "data")
+
 BIN_SECONDS = 300
-BACKFILL_SECONDS = 12 * 3600  # on first run, only backfill sessions touched within this window
-PROVIDERS = {"anthropic", "openai"}  # 구독 rows: anthropic=Claude Code, openai=Codex
-# dashboard provider id -> gjc credential provider names in auth_credentials
+SPAN_MINUTES = 24 * 60
+BACKFILL_SECONDS = 30 * 86400  # 30 days for 30d billing + 24h series
+RETENTION_SECONDS = 31 * 86400
+SUB_PROVIDERS = {"anthropic", "openai"}
+ALL_PROVIDERS = {"anthropic", "openai", "gemini"}
 CRED_PROVIDERS = {"anthropic": ("anthropic",), "openai": ("openai-codex", "openai")}
 
 
-def normalize_provider(provider: str):
-    provider = provider.lower()
-    if provider == "anthropic" or provider.startswith("anthropic-"):
+def normalize_provider(provider: str) -> str | None:
+    p = (provider or "").lower().strip()
+    if p == "anthropic" or p.startswith("anthropic-"):
         return "anthropic"
-    if provider == "openai" or provider.startswith("openai-") or provider in {"codex", "openai-codex"}:
+    if p == "openai" or p.startswith("openai-") or p in {"codex", "openai-codex"}:
         return "openai"
+    if p in {"google", "gemini"} or p.startswith("google-") or p.startswith("gemini-"):
+        return "gemini"
     return None
 
 
-def active_subscription_providers():
-    """Dashboard provider ids whose gjc credential is an active OAuth login.
-
-    Returns None when the credential DB is unreadable (fail open: keep the
-    pre-existing report-everything behavior instead of silently dropping
-    genuine subscription usage).
-    """
+def active_subscription_providers() -> set[str] | None:
+    """Dashboard provider ids whose gjc credential is an active OAuth login."""
     try:
         db = sqlite3.connect(f"file:{GJC_DB}?mode=ro", uri=True)
         try:
@@ -73,7 +84,7 @@ def active_subscription_providers():
     except Exception as e:
         print(f"gjc_usage_reporter: cannot read auth state ({e}); reporting all providers", flush=True)
         return None
-    active = set()
+    active: set[str] = set()
     for provider, cred_type, disabled_cause in rows:
         for dash_id, names in CRED_PROVIDERS.items():
             if provider in names and cred_type == "oauth" and not disabled_cause:
@@ -81,81 +92,431 @@ def active_subscription_providers():
     return active
 
 
-def load_state() -> dict:
+def load_state() -> dict[str, Any]:
     try:
-        return json.loads(STATE.read_text(encoding="utf-8"))
+        st = json.loads(STATE.read_text(encoding="utf-8"))
+        if isinstance(st, dict) and st.get("schema_version") == SCHEMA_VERSION:
+            return st
     except Exception:
-        return {"offsets": {}}
+        pass
+    return {"schema_version": SCHEMA_VERSION, "offsets": {}, "bins": {}}
 
 
-def save_state(s: dict) -> None:
+def save_state(s: dict[str, Any]) -> None:
     STATE.parent.mkdir(parents=True, exist_ok=True)
     tmp = STATE.with_suffix(".tmp")
     tmp.write_text(json.dumps(s), encoding="utf-8")
     tmp.replace(STATE)
 
 
-def _usage_token():
+def _usage_token() -> str | None:
     try:
         return TOKEN_FILE.read_text().strip()
     except Exception:
         return None
 
 
-def post(rec: dict) -> bool:
+def post_with_circuit_breaker(rec: dict[str, Any], endpoints: list[str], dead_endpoints: set[str]) -> bool:
     data = json.dumps(rec).encode("utf-8")
-    headers = {"Content-Type": "application/json", "User-Agent": "gjc-usage-reporter/1.0"}
+    headers = {"Content-Type": "application/json", "User-Agent": "gjc-usage-reporter/2.0"}
     token = _usage_token()
     if token:
         headers["X-Usage-Token"] = token
-    for endpoint in ENDPOINTS:
+    for endpoint in endpoints:
+        if endpoint in dead_endpoints:
+            continue
         req = urllib.request.Request(endpoint, data=data, headers=headers, method="POST")
         try:
-            with urllib.request.urlopen(req, timeout=10) as r:
+            with urllib.request.urlopen(req, timeout=2.5) as r:
                 r.read()
             return True
         except Exception as e:
-            print(f"post fail ({endpoint}):", e, flush=True)
+            dead_endpoints.add(endpoint)
+            print(f"post fail ({endpoint}): {e}", flush=True)
     return False
 
 
-def to_seconds(ts) -> float:
+def to_seconds(ts: Any) -> float:
     if isinstance(ts, (int, float)):
         return float(ts) / 1000.0 if ts > 1e12 else float(ts)
     try:
-        from datetime import datetime
         return datetime.fromisoformat(str(ts).replace("Z", "+00:00")).timestamp()
     except Exception:
         return time.time()
 
 
+def write_local_otel_files(bins: dict[str, dict[str, Any]]) -> None:
+    """Write ~/pc_agent/otel/usage_local.json and usage_api_local.json in token_status.py format."""
+    sub_bins: dict[str, dict[str, Any]] = {}
+    api_bins: dict[str, dict[str, Any]] = {}
+    for bkey, prov_map in bins.items():
+        if not isinstance(prov_map, dict):
+            continue
+        for prov, rec in prov_map.items():
+            if not isinstance(rec, dict):
+                continue
+            tok = (
+                int(rec.get("input") or 0)
+                + int(rec.get("output") or 0)
+                + int(rec.get("cacheRead") or 0)
+                + int(rec.get("cacheCreation") or 0)
+            )
+            cost = float(rec.get("cost") or 0.0)
+            if tok <= 0:
+                continue
+            entry = {
+                "tokens": tok,
+                "cost": round(cost, 6),
+                "by_type": {
+                    "input": int(rec.get("input") or 0),
+                    "output": int(rec.get("output") or 0),
+                    "cacheRead": int(rec.get("cacheRead") or 0),
+                    "cacheCreation": int(rec.get("cacheCreation") or 0),
+                },
+            }
+            if prov in SUB_PROVIDERS:
+                sub_bins.setdefault(bkey, {})[prov] = entry
+            elif prov == "gemini":
+                api_bins.setdefault(bkey, {})["gemini"] = entry
+
+    for path, payload_bins in ((OTEL_USAGE, sub_bins), (OTEL_USAGE_API, api_bins)):
+        try:
+            existing: dict[str, Any] = {}
+            if path.exists():
+                existing = json.loads(path.read_text(encoding="utf-8"))
+            merged_bins = existing.get("bins", {}) if isinstance(existing, dict) else {}
+            for bkey, pmap in payload_bins.items():
+                dest = merged_bins.setdefault(bkey, {})
+                for prov, entry in pmap.items():
+                    prev = dest.get(prov)
+                    if not isinstance(prev, dict) or int(entry["tokens"]) >= int(prev.get("tokens") or 0):
+                        dest[prov] = entry
+            path.parent.mkdir(parents=True, exist_ok=True)
+            tmp = path.with_suffix(".tmp")
+            tmp.write_text(json.dumps({"bins": merged_bins}, ensure_ascii=False), encoding="utf-8")
+            tmp.replace(path)
+        except Exception as e:
+            print(f"gjc_usage_reporter: failed writing {path}: {e}", flush=True)
+
+
+def build_series_from_bins(
+    bins: dict[str, dict[str, Any]],
+    provider_id: str,
+    now_dt: datetime,
+    source: str,
+    span_min: int = SPAN_MINUTES,
+    bin_min: int = 5,
+) -> dict[str, Any]:
+    step = bin_min * 60
+    end = (int(now_dt.timestamp()) // step) * step
+    n = span_min // bin_min
+    points = []
+    total = 0
+    cost = 0.0
+    for i in range(n):
+        bstart = end - step * (n - 1 - i)
+        rec = (bins.get(str(bstart)) or {}).get(provider_id)
+        if isinstance(rec, dict):
+            tok = (
+                int(rec.get("input") or 0)
+                + int(rec.get("output") or 0)
+                + int(rec.get("cacheRead") or 0)
+                + int(rec.get("cacheCreation") or 0)
+            )
+            c = float(rec.get("cost") or 0.0)
+        else:
+            tok = 0
+            c = 0.0
+        total += tok
+        cost += c
+        points.append({
+            "t": datetime.fromtimestamp(bstart, timezone.utc).strftime("%Y-%m-%dT%H:%M:00Z"),
+            "tokens": tok,
+        })
+    return {
+        "available": True,
+        "source": source,
+        "bin_seconds": step,
+        "span_minutes": span_min,
+        "points": points,
+        "window_tokens": int(total),
+        "window_cost": round(cost, 4),
+    }
+
+
+def build_gemini_30d_billing(bins: dict[str, dict[str, Any]], now_ts: float) -> dict[str, Any]:
+    cutoff = now_ts - 30 * 86400
+    inp = out = cr = cw = 0
+    cost = 0.0
+    for bkey, pmap in bins.items():
+        try:
+            bts = int(bkey)
+        except ValueError:
+            continue
+        if bts < cutoff or not isinstance(pmap, dict):
+            continue
+        rec = pmap.get("gemini")
+        if not isinstance(rec, dict):
+            continue
+        inp += int(rec.get("input") or 0)
+        out += int(rec.get("output") or 0)
+        cr += int(rec.get("cacheRead") or 0)
+        cw += int(rec.get("cacheCreation") or 0)
+        cost += float(rec.get("cost") or 0.0)
+    total = inp + out + cr + cw
+    return {
+        "available": True,
+        "source": "Gajae Code Gemini API telemetry (last 30d)",
+        "window": "last_30d",
+        "month_to_date_cost": round(cost, 4),
+        "currency": "usd",
+        "cost_available": True,
+        "usage": {
+            "available": True,
+            "source": "Gajae Code Gemini session telemetry",
+            "total_tokens": total,
+            "input_tokens": inp,
+            "output_tokens": out,
+            "cache_read_tokens": cr,
+            "cache_creation_tokens": cw,
+        },
+    }
+
+
+def merge_series_points(base_series: dict[str, Any] | None, overlay_series: dict[str, Any]) -> dict[str, Any]:
+    """Merge two 5-minute series onto the 24h (288-bin) grid of overlay_series using per-bin max."""
+    base_map: dict[str, int] = {}
+    if isinstance(base_series, dict):
+        for p in base_series.get("points") or []:
+            if isinstance(p, dict) and p.get("t"):
+                base_map[str(p["t"])] = int(p.get("tokens") or 0)
+    merged_points = []
+    total = 0
+    for p in overlay_series.get("points") or []:
+        t = str(p["t"])
+        v = max(int(p.get("tokens") or 0), int(base_map.get(t) or 0))
+        merged_points.append({"t": t, "tokens": v})
+        total += v
+    out = dict(overlay_series)
+    out["points"] = merged_points
+    out["window_tokens"] = total
+    base_cost = float((base_series or {}).get("window_cost") or 0.0) if isinstance(base_series, dict) else 0.0
+    over_cost = float(overlay_series.get("window_cost") or 0.0)
+    out["window_cost"] = round(max(base_cost, over_cost), 4)
+    return out
+
+
+def expand_series_to_24h(existing_series: dict[str, Any] | None, cached_series: dict[str, Any] | None, now_dt: datetime) -> dict[str, Any] | None:
+    """Ensure API usage_series has a full 24h (288-bin) window even if Mac mini published 6h (72 bins)."""
+    if not isinstance(existing_series, dict) or not existing_series.get("available"):
+        return existing_series
+    step = 300
+    end = (int(now_dt.timestamp()) // step) * step
+    n = SPAN_MINUTES // 5
+    point_map: dict[str, int] = {}
+    if isinstance(cached_series, dict):
+        for p in cached_series.get("points") or []:
+            if isinstance(p, dict) and p.get("t"):
+                point_map[str(p["t"])] = max(point_map.get(str(p["t"]), 0), int(p.get("tokens") or 0))
+    for p in existing_series.get("points") or []:
+        if isinstance(p, dict) and p.get("t"):
+            point_map[str(p["t"])] = max(point_map.get(str(p["t"]), 0), int(p.get("tokens") or 0))
+    points = []
+    total = 0
+    for i in range(n):
+        bstart = end - step * (n - 1 - i)
+        t = datetime.fromtimestamp(bstart, timezone.utc).strftime("%Y-%m-%dT%H:%M:00Z")
+        v = point_map.get(t, 0)
+        points.append({"t": t, "tokens": v})
+        total += v
+    res = dict(existing_series)
+    res["bin_seconds"] = step
+    res["span_minutes"] = SPAN_MINUTES
+    res["points"] = points
+    res["window_tokens"] = total
+    return res
+
+
+def run_git(cmd: list[str], cwd: Path, timeout: int = 30) -> subprocess.CompletedProcess:
+    env = dict(os.environ)
+    env["DASHBOARD_ALLOW_LOCAL_COMMIT"] = "1"
+    env.setdefault("HOME", str(Path.home()))
+    env.setdefault("PATH", "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin")
+    env.setdefault("GIT_SSH_COMMAND", "ssh -o BatchMode=yes -o ConnectTimeout=8")
+    return subprocess.run(cmd, cwd=str(cwd), env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
+
+
+def publish_to_github_data(bins: dict[str, dict[str, Any]], now_dt: datetime) -> None:
+    if not (DASHBOARD_DATA_REPO / ".git").exists():
+        return
+    try:
+        run_git(["git", "pull", "--rebase", "origin", DASHBOARD_BRANCH], DASHBOARD_DATA_REPO, timeout=25)
+    except Exception as e:
+        print(f"gjc_usage_reporter: git pull failed: {e}", flush=True)
+
+    tokens_path = DASHBOARD_DATA_REPO / "data" / "tokens.json"
+    macbook_path = DASHBOARD_DATA_REPO / "data" / "gjc_macbook.json"
+
+    try:
+        tokens_data = json.loads(tokens_path.read_text(encoding="utf-8")) if tokens_path.exists() else {}
+    except Exception:
+        tokens_data = {}
+    try:
+        prev_mb = json.loads(macbook_path.read_text(encoding="utf-8")) if macbook_path.exists() else {}
+    except Exception:
+        prev_mb = {}
+
+    now_iso = now_dt.isoformat().replace("+00:00", "Z")
+    sub_source = "Claude Code / Codex / Gajae Code OpenTelemetry (subscription)"
+    gem_source = "Pipeline + Gajae Code Gemini API usage"
+
+    openai_sub = build_series_from_bins(bins, "openai", now_dt, sub_source)
+    anthropic_sub = build_series_from_bins(bins, "anthropic", now_dt, sub_source)
+    gemini_api = build_series_from_bins(bins, "gemini", now_dt, gem_source)
+    gemini_billing = build_gemini_30d_billing(bins, now_dt.timestamp())
+
+    # Check if tokens.json currently lacks MacBook data or has 6h truncated series
+    need_tokens_patch = False
+    providers_list = tokens_data.get("providers") or []
+    prev_mb_provs = (prev_mb.get("providers") or {}) if isinstance(prev_mb, dict) else {}
+
+    cached_api_series: dict[str, Any] = {}
+    for p in providers_list:
+        if not isinstance(p, dict):
+            continue
+        pid = p.get("id")
+        if pid in ("openai", "anthropic"):
+            target_sub = openai_sub if pid == "openai" else anthropic_sub
+            cur_sub = p.get("subscription_series") or {}
+            if (
+                int(cur_sub.get("window_tokens") or 0) < int(target_sub["window_tokens"])
+                or len(cur_sub.get("points") or []) < 288
+            ):
+                need_tokens_patch = True
+            p["subscription_series"] = merge_series_points(cur_sub, target_sub)
+
+            cur_api = p.get("usage_series")
+            if isinstance(cur_api, dict) and len(cur_api.get("points") or []) < 288:
+                need_tokens_patch = True
+            prev_cached_api = (prev_mb_provs.get(pid) or {}).get("usage_series")
+            expanded_api = expand_series_to_24h(cur_api, prev_cached_api, now_dt)
+            if expanded_api:
+                p["usage_series"] = expanded_api
+                cached_api_series[pid] = expanded_api
+        elif pid == "gemini":
+            cur_api = p.get("usage_series") or {}
+            if (
+                int(cur_api.get("window_tokens") or 0) < int(gemini_api["window_tokens"])
+                or len(cur_api.get("points") or []) < 288
+                or not (p.get("billing") or {}).get("available")
+            ):
+                need_tokens_patch = True
+            p["usage_series"] = merge_series_points(cur_api, gemini_api)
+            p["billing"] = gemini_billing
+
+    # Check if MacBook token totals changed compared to prev_mb
+    def _mb_sig(mb_obj: dict[str, Any]) -> tuple:
+        pr = (mb_obj.get("providers") or {}) if isinstance(mb_obj, dict) else {}
+        return (
+            ((pr.get("openai") or {}).get("subscription_series") or {}).get("window_tokens"),
+            ((pr.get("anthropic") or {}).get("subscription_series") or {}).get("window_tokens"),
+            ((pr.get("gemini") or {}).get("usage_series") or {}).get("window_tokens"),
+            (((pr.get("gemini") or {}).get("billing") or {}).get("usage") or {}).get("total_tokens"),
+        )
+
+    new_mb = {
+        "host": socket.gethostname(),
+        "updated_at": now_iso,
+        "bin_seconds": BIN_SECONDS,
+        "span_minutes": SPAN_MINUTES,
+        "providers": {
+            "openai": {
+                "subscription_series": openai_sub,
+                "usage_series": cached_api_series.get("openai"),
+            },
+            "anthropic": {
+                "subscription_series": anthropic_sub,
+                "usage_series": cached_api_series.get("anthropic"),
+            },
+            "gemini": {
+                "billing": gemini_billing,
+                "usage_series": gemini_api,
+            },
+        },
+    }
+
+    # Also check if tokens.json is stale (> 10 minutes old, e.g. Mac mini offline)
+    tokens_age_sec = 0.0
+    try:
+        t_up = str(tokens_data.get("updated_at") or "")
+        if t_up:
+            tokens_age_sec = now_dt.timestamp() - datetime.fromisoformat(t_up.replace("Z", "+00:00")).timestamp()
+    except Exception:
+        tokens_age_sec = 999999.0
+
+    mb_changed = _mb_sig(prev_mb) != _mb_sig(new_mb)
+    if not mb_changed and not need_tokens_patch and tokens_age_sec < 600:
+        return
+
+    if tokens_age_sec >= 600 or mb_changed:
+        tokens_data["updated_at"] = now_iso
+        tokens_data["overall"] = "ok"
+
+    macbook_path.parent.mkdir(parents=True, exist_ok=True)
+    macbook_path.write_text(json.dumps(new_mb, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    if providers_list:
+        tokens_path.write_text(json.dumps(tokens_data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+    try:
+        run_git(["git", "config", "user.name", "MacBook GJC Token Reporter"], DASHBOARD_DATA_REPO, timeout=10)
+        run_git(["git", "config", "user.email", "tokens@jehyunlee.dev"], DASHBOARD_DATA_REPO, timeout=10)
+        run_git(["git", "add", "data/gjc_macbook.json", "data/tokens.json"], DASHBOARD_DATA_REPO, timeout=15)
+        st = run_git(["git", "status", "--short", "data/gjc_macbook.json", "data/tokens.json"], DASHBOARD_DATA_REPO, timeout=15)
+        if st.stdout.strip():
+            c = run_git(["git", "commit", "--no-verify", "-q", "-m", f"tokens: macbook gjc usage {now_iso}"], DASHBOARD_DATA_REPO, timeout=20)
+            if c.returncode != 0:
+                print("gjc_usage_reporter: git commit failed:", c.stdout.strip(), flush=True)
+                return
+            p = run_git(["git", "push", "origin", DASHBOARD_BRANCH], DASHBOARD_DATA_REPO, timeout=30)
+            if p.returncode != 0:
+                run_git(["git", "pull", "--rebase", "origin", DASHBOARD_BRANCH], DASHBOARD_DATA_REPO, timeout=25)
+                p = run_git(["git", "push", "origin", DASHBOARD_BRANCH], DASHBOARD_DATA_REPO, timeout=30)
+            print(f"gjc_usage_reporter: published to origin/{DASHBOARD_BRANCH} (openai={openai_sub['window_tokens']}, anthropic={anthropic_sub['window_tokens']}, gemini={gemini_api['window_tokens']})", flush=True)
+    except Exception as e:
+        print(f"gjc_usage_reporter: git publish failed: {e}", flush=True)
+
+
 def main() -> None:
     st = load_state()
-    offsets = st.setdefault("offsets", {})
+    offsets: dict[str, int] = st.setdefault("offsets", {})
+    bins: dict[str, dict[str, Any]] = st.setdefault("bins", {})
     next_offsets = dict(offsets)
     first_run = not bool(offsets)
-    cutoff = time.time() - BACKFILL_SECONDS
+    now_ts = time.time()
+    cutoff = now_ts - BACKFILL_SECONDS
+
     files = glob.glob(str(SESS_DIR / "**" / "*.jsonl"), recursive=True)
     active = active_subscription_providers()
     if active is not None:
-        skipped = sorted(PROVIDERS - active)
+        skipped = sorted(SUB_PROVIDERS - active)
         if skipped:
             print(f"gjc_usage_reporter: skipping non-subscription auth providers: {', '.join(skipped)}", flush=True)
 
-    agg: dict = {}  # (bstart, provider) -> {input,output,cacheRead,cacheCreation}
+    new_records = 0
     for f in files:
         try:
             size = os.path.getsize(f)
+            mtime = os.path.getmtime(f)
         except OSError:
             continue
         off = offsets.get(f)
         if off is None:
-            if first_run and os.path.getmtime(f) < cutoff:
-                next_offsets[f] = size  # skip ancient backfill on first run
+            if first_run and mtime < cutoff:
+                next_offsets[f] = size
                 continue
             off = 0
         if off > size:
-            off = 0  # file truncated/replaced
+            off = 0
         if off >= size:
             continue
         try:
@@ -166,12 +527,12 @@ def main() -> None:
             continue
         last_nl = data.rfind(b"\n")
         if last_nl < 0:
-            continue  # no complete line yet
+            continue
         chunk = data[: last_nl + 1]
         next_offsets[f] = off + len(chunk)
         for line in chunk.split(b"\n"):
             line = line.strip()
-            if not line:
+            if not line or b"\"assistant\"" not in line:
                 continue
             try:
                 e = json.loads(line)
@@ -183,43 +544,108 @@ def main() -> None:
             if m.get("role") != "assistant":
                 continue
             prov = normalize_provider(str(m.get("provider", "")))
-            if prov not in PROVIDERS:
+            if prov not in ALL_PROVIDERS:
                 continue
-            if active is not None and prov not in active:
-                # API-key or disabled OAuth: billed as metered API and already
-                # visible via the provider Admin API series. Never post it to
-                # the subscription bucket.
+            if prov in SUB_PROVIDERS and active is not None and prov not in active:
                 continue
             u = m.get("usage") or {}
             inp = int(u.get("input") or 0)
             out = int(u.get("output") or 0)
             cr = int(u.get("cacheRead") or 0)
             cw = int(u.get("cacheWrite") or 0)
-            if (inp + out + cr + cw) <= 0:
+            tot = inp + out + cr + cw
+            if tot <= 0:
                 continue
+            cost_obj = u.get("cost")
+            cost_val = float(cost_obj.get("total") or 0.0) if isinstance(cost_obj, dict) else 0.0
             sec = to_seconds(m.get("timestamp") or e.get("timestamp"))
+            if sec < cutoff:
+                continue
             bstart = int(sec // BIN_SECONDS) * BIN_SECONDS
-            d = agg.setdefault((bstart, prov), {"input": 0, "output": 0, "cacheRead": 0, "cacheCreation": 0})
-            d["input"] += inp
-            d["output"] += out
-            d["cacheRead"] += cr
-            d["cacheCreation"] += cw
+            bmap = bins.setdefault(str(bstart), {})
+            d = bmap.setdefault(
+                prov,
+                {"input": 0, "output": 0, "cacheRead": 0, "cacheCreation": 0, "cost": 0.0, "sent_tokens": 0},
+            )
+            d["input"] = int(d.get("input") or 0) + inp
+            d["output"] = int(d.get("output") or 0) + out
+            d["cacheRead"] = int(d.get("cacheRead") or 0) + cr
+            d["cacheCreation"] = int(d.get("cacheCreation") or 0) + cw
+            d["cost"] = round(float(d.get("cost") or 0.0) + cost_val, 6)
+            new_records += 1
 
-    if not agg:
-        st["offsets"] = next_offsets
-        save_state(st)
-        return
+    # Prune bins older than RETENTION_SECONDS
+    prune_before = int(now_ts - RETENTION_SECONDS)
+    for bkey in list(bins.keys()):
+        try:
+            if int(bkey) < prune_before:
+                del bins[bkey]
+        except ValueError:
+            del bins[bkey]
 
-    ok = 0
-    for (bstart, prov), bt in sorted(agg.items()):
-        if post({"provider": prov, "by_type": bt, "ts": bstart}):
-            ok += 1
-    if ok == len(agg):
-        st["offsets"] = next_offsets
+    st["offsets"] = next_offsets
+    save_state(st)
+    write_local_otel_files(bins)
+
+    # Best-effort POST of recent 24h unsent bins to Mac mini receiver (with circuit breaker)
+    recent_cut = int(now_ts - 86400)
+    dead_sub: set[str] = set()
+    dead_pc: set[str] = set()
+    posted = 0
+    attempted = 0
+    for bkey in sorted(bins.keys()):
+        try:
+            bstart = int(bkey)
+        except ValueError:
+            continue
+        if bstart < recent_cut:
+            continue
+        pmap = bins[bkey]
+        if not isinstance(pmap, dict):
+            continue
+        for prov, d in pmap.items():
+            if not isinstance(d, dict):
+                continue
+            tot = (
+                int(d.get("input") or 0)
+                + int(d.get("output") or 0)
+                + int(d.get("cacheRead") or 0)
+                + int(d.get("cacheCreation") or 0)
+            )
+            sent = int(d.get("sent_tokens") or 0)
+            if tot <= sent:
+                continue
+            attempted += 1
+            if prov in SUB_PROVIDERS:
+                if len(dead_sub) >= len(ENDPOINTS):
+                    continue
+                bt = {
+                    "input": int(d.get("input") or 0),
+                    "output": int(d.get("output") or 0),
+                    "cacheRead": int(d.get("cacheRead") or 0),
+                    "cacheCreation": int(d.get("cacheCreation") or 0),
+                }
+                if post_with_circuit_breaker({"provider": prov, "by_type": bt, "ts": bstart}, ENDPOINTS, dead_sub):
+                    d["sent_tokens"] = tot
+                    posted += 1
+            elif prov == "gemini":
+                if len(dead_pc) >= len(PC_ENDPOINTS):
+                    continue
+                bt_pc = {
+                    "input": int(d.get("input") or 0),
+                    "output": int(d.get("output") or 0),
+                    "cached": int(d.get("cacheRead") or 0) + int(d.get("cacheCreation") or 0),
+                }
+                if post_with_circuit_breaker({"provider": "gemini", "by_type": bt_pc, "ts": bstart}, PC_ENDPOINTS, dead_pc):
+                    d["sent_tokens"] = tot
+                    posted += 1
+
+    if posted > 0:
         save_state(st)
-    else:
-        print("gjc_usage_reporter: not advancing offsets because posting failed", flush=True)
-    print(f"gjc_usage_reporter: posted {ok}/{len(agg)} bin-records", flush=True)
+        print(f"gjc_usage_reporter: posted {posted}/{attempted} recent bin-records to receiver", flush=True)
+
+    # Always ensure GitHub data branch has the latest MacBook usage (including when Mac mini is disconnected)
+    publish_to_github_data(bins, datetime.now(timezone.utc))
 
 
 if __name__ == "__main__":

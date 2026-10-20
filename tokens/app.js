@@ -1,5 +1,7 @@
 const SNAP_SAME = '../data/tokens.json';
 const SNAP_RAW = 'https://raw.githubusercontent.com/jehyunlee/dashboards/data/data/tokens.json';
+const MB_SAME = '../data/gjc_macbook.json';
+const MB_RAW = 'https://raw.githubusercontent.com/jehyunlee/dashboards/data/data/gjc_macbook.json';
 const HIST_SAME = '../data/tokens_history.json';
 const HIST_RAW = 'https://raw.githubusercontent.com/jehyunlee/dashboards/data/data/tokens_history.json';
 const VISIBLE = 288; // 288 ticks x 5 min = last 24 hours
@@ -34,10 +36,49 @@ async function newestOf(urls, keyer){
   return ok[0];
 }
 const fetchSnapshot = () => newestOf([SNAP_SAME, SNAP_RAW], d => Date.parse(d.updated_at || 0) || 0);
+const fetchMacbook = async () => {
+  try { return await newestOf([MB_SAME, MB_RAW], d => Date.parse(d.updated_at || 0) || 0); }
+  catch { return null; }
+};
 const fetchHistory = async () => {
   try { return await newestOf([HIST_SAME, HIST_RAW], d => (d.samples || []).length); }
   catch { return {samples: []}; }
 };
+
+function mergeSeries(base, over){
+  if(!over || !over.available) return base;
+  if(!base || !base.available) return over;
+  const bmap = new Map((base.points || []).map(p => [p.t, Number(p.tokens) || 0]));
+  const omap = new Map((over.points || []).map(p => [p.t, Number(p.tokens) || 0]));
+  const grid = (over.points && over.points.length >= (base.points || []).length) ? over.points : base.points;
+  let total = 0;
+  const points = (grid || []).map(p => {
+    const v = Math.max(bmap.get(p.t) || 0, omap.get(p.t) || 0);
+    total += v;
+    return {t: p.t, tokens: v};
+  });
+  return {
+    ...base,
+    ...over,
+    available: true,
+    points,
+    window_tokens: total,
+    window_cost: Math.max(Number(base.window_cost) || 0, Number(over.window_cost) || 0) || undefined,
+  };
+}
+
+function applyMacbookOverlay(d, mb){
+  if(!d || !mb || !mb.providers) return d;
+  if(Date.parse(mb.updated_at || 0) > Date.parse(d.updated_at || 0)) d.updated_at = mb.updated_at;
+  for(const p of (d.providers || [])){
+    const mp = mb.providers[p.id];
+    if(!mp) continue;
+    if(mp.subscription_series) p.subscription_series = mergeSeries(p.subscription_series, mp.subscription_series);
+    if(mp.usage_series) p.usage_series = mergeSeries(p.usage_series, mp.usage_series);
+    if(p.id === 'gemini' && mp.billing && mp.billing.available) p.billing = mp.billing;
+  }
+  return d;
+}
 
 function lastN(arr, n){ return arr.slice(Math.max(0, arr.length - n)); }
 
@@ -143,7 +184,8 @@ function eventLine(e){ return `${e.time || ''} — ${e.message || JSON.stringify
 
 async function refresh(){
   try{
-    const [d, hist] = await Promise.all([fetchSnapshot(), fetchHistory()]);
+    const [rawSnap, mb, hist] = await Promise.all([fetchSnapshot(), fetchMacbook(), fetchHistory()]);
+    const d = applyMacbookOverlay(rawSnap, mb);
     const samples = hist.samples || [];
     const age = ageMs(d.updated_at);
     const stale = age > 30 * 60 * 1000;

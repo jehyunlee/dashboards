@@ -352,17 +352,20 @@ def run_git(cmd: list[str], cwd: Path, timeout: int = 30) -> subprocess.Complete
     env["DASHBOARD_ALLOW_LOCAL_COMMIT"] = "1"
     env.setdefault("HOME", str(Path.home()))
     env.setdefault("PATH", "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin")
-    env.setdefault("GIT_SSH_COMMAND", "ssh -o BatchMode=yes -o ConnectTimeout=8")
+    env["GIT_SSH_COMMAND"] = "ssh -o BatchMode=yes -o ConnectTimeout=8 -o ControlMaster=no -o ControlPath=none"
     return subprocess.run(cmd, cwd=str(cwd), env=env, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=timeout)
 
 
-def publish_to_github_data(bins: dict[str, dict[str, Any]], now_dt: datetime) -> None:
+def publish_to_github_data(bins: dict[str, dict[str, Any]], now_dt: datetime, _retry: bool = False) -> None:
     if not (DASHBOARD_DATA_REPO / ".git").exists():
         return
     try:
-        run_git(["git", "pull", "--rebase", "origin", DASHBOARD_BRANCH], DASHBOARD_DATA_REPO, timeout=25)
+        run_git(["git", "rebase", "--abort"], DASHBOARD_DATA_REPO, timeout=10)
+        f = run_git(["git", "fetch", "origin", DASHBOARD_BRANCH], DASHBOARD_DATA_REPO, timeout=25)
+        if f.returncode == 0:
+            run_git(["git", "reset", "--hard", f"origin/{DASHBOARD_BRANCH}"], DASHBOARD_DATA_REPO, timeout=15)
     except Exception as e:
-        print(f"gjc_usage_reporter: git pull failed: {e}", flush=True)
+        print(f"gjc_usage_reporter: git sync failed: {e}", flush=True)
 
     tokens_path = DASHBOARD_DATA_REPO / "data" / "tokens.json"
     macbook_path = DASHBOARD_DATA_REPO / "data" / "gjc_macbook.json"
@@ -499,10 +502,10 @@ def publish_to_github_data(bins: dict[str, dict[str, Any]], now_dt: datetime) ->
                 print("gjc_usage_reporter: git commit failed:", c.stdout.strip(), flush=True)
                 return
             p = run_git(["git", "push", "origin", DASHBOARD_BRANCH], DASHBOARD_DATA_REPO, timeout=30)
-            if p.returncode != 0:
-                run_git(["git", "pull", "--rebase", "origin", DASHBOARD_BRANCH], DASHBOARD_DATA_REPO, timeout=25)
-                p = run_git(["git", "push", "origin", DASHBOARD_BRANCH], DASHBOARD_DATA_REPO, timeout=30)
-            print(f"gjc_usage_reporter: published to origin/{DASHBOARD_BRANCH} (openai={openai_sub['window_tokens']}, anthropic={anthropic_sub['window_tokens']}, gemini={gemini_api['window_tokens']})", flush=True)
+            if p.returncode != 0 and not _retry:
+                publish_to_github_data(bins, now_dt, _retry=True)
+                return
+            print(f"gjc_usage_reporter: published to origin/{DASHBOARD_BRANCH} (openai={openai_sub['window_tokens']}, anthropic={anthropic_sub['window_tokens']}, gemini_sub={gemini_sub['window_tokens']}, gemini_api={gemini_api['window_tokens']})", flush=True)
     except Exception as e:
         print(f"gjc_usage_reporter: git publish failed: {e}", flush=True)
 

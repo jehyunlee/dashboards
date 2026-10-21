@@ -1,6 +1,6 @@
 {
   "host": "Jehyunui-MacBookPro.local",
-  "updated_at": "2026-10-21T14:46:37.594840Z",
+  "updated_at": "2026-10-21T14:50:58.436660Z",
   "bin_seconds": 300,
   "span_minutes": 1440,
   "providers": {
@@ -11,10 +11,6 @@
         "bin_seconds": 300,
         "span_minutes": 1440,
         "points": [
-          {
-            "t": "2026-10-20T14:50:00Z",
-            "tokens": 0
-          },
           {
             "t": "2026-10-20T14:55:00Z",
             "tokens": 0
@@ -1162,6 +1158,10 @@
           {
             "t": "2026-10-21T14:45:00Z",
             "tokens": 0
+          },
+          {
+            "t": "2026-10-21T14:50:00Z",
+            "tokens": 0
           }
         ],
         "window_tokens": 3171830,
@@ -1172,10 +1172,6 @@
         "bin_seconds": 300,
         "span_minutes": 1440,
         "points": [
-          {
-            "t": "2026-10-20T14:50:00Z",
-            "tokens": 0
-          },
           {
             "t": "2026-10-20T14:55:00Z",
             "tokens": 0
@@ -2323,6 +2319,10 @@
           {
             "t": "2026-10-21T14:45:00Z",
             "tokens": 0
+          },
+          {
+            "t": "2026-10-21T14:50:00Z",
+            "tokens": 0
           }
         ],
         "window_tokens": 14089
@@ -2335,10 +2335,6 @@
         "bin_seconds": 300,
         "span_minutes": 1440,
         "points": [
-          {
-            "t": "2026-10-20T14:50:00Z",
-            "tokens": 7672093
-          },
           {
             "t": "2026-10-20T14:55:00Z",
             "tokens": 5142028
@@ -3486,20 +3482,20 @@
           {
             "t": "2026-10-21T14:45:00Z",
             "tokens": 0
+          },
+          {
+            "t": "2026-10-21T14:50:00Z",
+            "tokens": 0
           }
         ],
-        "window_tokens": 203361412,
-        "window_cost": 129.7143
+        "window_tokens": 195689319,
+        "window_cost": 126.8136
       },
       "usage_series": {
         "available": true,
         "bin_seconds": 300,
         "span_minutes": 1440,
         "points": [
-          {
-            "t": "2026-10-20T14:50:00Z",
-            "tokens": 7597
-          },
           {
             "t": "2026-10-20T14:55:00Z",
             "tokens": 0
@@ -4647,9 +4643,13 @@
           {
             "t": "2026-10-21T14:45:00Z",
             "tokens": 0
+          },
+          {
+            "t": "2026-10-21T14:50:00Z",
+            "tokens": 0
           }
         ],
-        "window_tokens": 16200
+        "window_tokens": 8603
       }
     },
     "gemini": {
@@ -4676,10 +4676,6 @@
         "bin_seconds": 300,
         "span_minutes": 1440,
         "points": [
-          {
-            "t": "2026-10-20T14:50:00Z",
-            "tokens": 0
-          },
           {
             "t": "2026-10-20T14:55:00Z",
             "tokens": 0
@@ -5827,6 +5823,10 @@
           {
             "t": "2026-10-21T14:45:00Z",
             "tokens": 0
+          },
+          {
+            "t": "2026-10-21T14:50:00Z",
+            "tokens": 0
           }
         ],
         "window_tokens": 0,
@@ -5838,10 +5838,6 @@
         "bin_seconds": 300,
         "span_minutes": 1440,
         "points": [
-          {
-            "t": "2026-10-20T14:50:00Z",
-            "tokens": 0
-          },
           {
             "t": "2026-10-20T14:55:00Z",
             "tokens": 0
@@ -6988,6 +6984,10 @@
           },
           {
             "t": "2026-10-21T14:45:00Z",
+            "tokens": 0
+          },
+          {
+            "t": "2026-10-21T14:50:00Z",
             "tokens": 0
           }
         ],

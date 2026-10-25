@@ -1,6 +1,6 @@
 {
   "host": "Jehyunui-MacBookPro.local",
-  "updated_at": "2026-10-25T15:36:53.866751Z",
+  "updated_at": "2026-10-25T15:39:02.575493Z",
   "bin_seconds": 300,
   "span_minutes": 1440,
   "providers": {
@@ -13,23 +13,23 @@
         "points": [
           {
             "t": "2026-10-24T15:40:00Z",
-            "tokens": 13075103
+            "tokens": 19802733
           },
           {
             "t": "2026-10-24T15:45:00Z",
-            "tokens": 9124789
+            "tokens": 12357083
           },
           {
             "t": "2026-10-24T15:50:00Z",
-            "tokens": 8675848
+            "tokens": 11985214
           },
           {
             "t": "2026-10-24T15:55:00Z",
-            "tokens": 9444596
+            "tokens": 13974151
           },
           {
             "t": "2026-10-24T16:00:00Z",
-            "tokens": 2895234
+            "tokens": 4342851
           },
           {
             "t": "2026-10-24T16:05:00Z",
@@ -1161,11 +1161,11 @@
           },
           {
             "t": "2026-10-25T15:35:00Z",
-            "tokens": 435234
+            "tokens": 1091021
           }
         ],
-        "window_tokens": 52244587,
-        "window_cost": 79.7904
+        "window_tokens": 72146836,
+        "window_cost": 115.7784
       },
       "usage_series": {
         "available": true,
@@ -3473,23 +3473,23 @@
           },
           {
             "t": "2026-10-25T15:20:00Z",
-            "tokens": 4639638
+            "tokens": 8841455
           },
           {
             "t": "2026-10-25T15:25:00Z",
-            "tokens": 5046814
+            "tokens": 10387013
           },
           {
             "t": "2026-10-25T15:30:00Z",
-            "tokens": 2747697
+            "tokens": 6854153
           },
           {
             "t": "2026-10-25T15:35:00Z",
-            "tokens": 2745622
+            "tokens": 5491244
           }
         ],
-        "window_tokens": 15179771,
-        "window_cost": 9.6569
+        "window_tokens": 31573865,
+        "window_cost": 18.9073
       },
       "usage_series": {
         "available": true,

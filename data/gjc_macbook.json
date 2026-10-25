@@ -1,6 +1,6 @@
 {
   "host": "Jehyunui-MacBookPro.local",
-  "updated_at": "2026-10-25T15:21:51.159294Z",
+  "updated_at": "2026-10-25T15:23:59.244258Z",
   "bin_seconds": 300,
   "span_minutes": 1440,
   "providers": {
@@ -13,11 +13,11 @@
         "points": [
           {
             "t": "2026-10-24T15:25:00Z",
-            "tokens": 9503637
+            "tokens": 16825488
           },
           {
             "t": "2026-10-24T15:30:00Z",
-            "tokens": 10287624
+            "tokens": 18488805
           },
           {
             "t": "2026-10-24T15:35:00Z",
@@ -25,23 +25,23 @@
           },
           {
             "t": "2026-10-24T15:40:00Z",
-            "tokens": 6347473
+            "tokens": 13075103
           },
           {
             "t": "2026-10-24T15:45:00Z",
-            "tokens": 5892495
+            "tokens": 9124789
           },
           {
             "t": "2026-10-24T15:50:00Z",
-            "tokens": 5366482
+            "tokens": 8675848
           },
           {
             "t": "2026-10-24T15:55:00Z",
-            "tokens": 4915041
+            "tokens": 9444596
           },
           {
             "t": "2026-10-24T16:00:00Z",
-            "tokens": 1447617
+            "tokens": 2895234
           },
           {
             "t": "2026-10-24T16:05:00Z",
@@ -1164,8 +1164,8 @@
             "tokens": 0
           }
         ],
-        "window_tokens": 45034407,
-        "window_cost": 60.2606
+        "window_tokens": 79803901,
+        "window_cost": 120.466
       },
       "usage_series": {
         "available": true,
@@ -3485,11 +3485,11 @@
           },
           {
             "t": "2026-10-25T15:20:00Z",
-            "tokens": 437821
+            "tokens": 2226469
           }
         ],
-        "window_tokens": 437821,
-        "window_cost": 2.1899
+        "window_tokens": 2226469,
+        "window_cost": 5.4815
       },
       "usage_series": {
         "available": true,

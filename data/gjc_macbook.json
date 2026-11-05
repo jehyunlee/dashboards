@@ -1,6 +1,6 @@
 {
   "host": "172.16.nate.com",
-  "updated_at": "2026-11-05T08:35:47.417890Z",
+  "updated_at": "2026-11-05T08:37:57.131067Z",
   "bin_seconds": 300,
   "span_minutes": 1440,
   "providers": {
@@ -3485,11 +3485,11 @@
           },
           {
             "t": "2026-11-05T08:35:00Z",
-            "tokens": 663364
+            "tokens": 886575
           }
         ],
-        "window_tokens": 175341439,
-        "window_cost": 58.1362
+        "window_tokens": 175564650,
+        "window_cost": 58.191
       },
       "usage_series": {
         "available": true,

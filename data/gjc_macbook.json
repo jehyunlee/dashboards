@@ -1,6 +1,6 @@
 {
   "host": "Jehyunui-MacBookPro.local",
-  "updated_at": "2026-11-15T10:52:50.300213Z",
+  "updated_at": "2026-11-15T10:54:59.928521Z",
   "bin_seconds": 300,
   "span_minutes": 1440,
   "providers": {
@@ -3485,11 +3485,11 @@
           },
           {
             "t": "2026-11-15T10:50:00Z",
-            "tokens": 1556696
+            "tokens": 2102787
           }
         ],
-        "window_tokens": 511340211,
-        "window_cost": 400.2628
+        "window_tokens": 511886302,
+        "window_cost": 400.4213
       },
       "usage_series": {
         "available": true,
